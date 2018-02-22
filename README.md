@@ -18,6 +18,6 @@ with further FOLIO Developer documentation at [dev.folio.org](http://dev.folio.o
 
 ### Issue tracker
 
-See project [MODCXMUX](https://issues.folio.org/browse/OKAPICLI)
+See project [OKAPICLI](https://issues.folio.org/browse/OKAPICLI)
 at the [FOLIO issue tracker](http://dev.folio.org/community/guide-issues).
 
