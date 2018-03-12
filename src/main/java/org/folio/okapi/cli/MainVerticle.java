@@ -1,6 +1,7 @@
 package org.folio.okapi.cli;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
@@ -10,16 +11,10 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
-import static org.folio.okapi.common.ErrorType.*;
-import org.folio.okapi.common.ExtendedAsyncResult;
-import org.folio.okapi.common.Failure;
 import org.folio.okapi.common.OkapiClient;
 import org.folio.okapi.common.OkapiLogger;
 import org.folio.okapi.common.SemVer;
-import org.folio.okapi.common.Success;
 
 public class MainVerticle extends AbstractVerticle {
 
@@ -29,6 +24,7 @@ public class MainVerticle extends AbstractVerticle {
   private OkapiClient cli;
   private JsonObject conf;
   private Vertx vertx;
+  private String tenant;
 
   @Override
   public void init(Vertx vertx, Context context) {
@@ -50,44 +46,113 @@ public class MainVerticle extends AbstractVerticle {
     });
   }
 
-  private void version(Handler<ExtendedAsyncResult<String>> fut) {
+  int count = 0;
+
+  private void startHandler(Handler<AsyncResult<String>> handler) {
+    logger.info("start");
+    handler.handle(Future.succeededFuture(""));
+  }
+
+  private void endHandler(Handler<AsyncResult<String>> handler) {
+    logger.info("end");
+    handler.handle(Future.succeededFuture(""));
+  }
+
+  private void version(Handler<AsyncResult<String>> handler) {
+    if (++count > 10) {
+      try { // testing that we do not use stack with compose
+        throw new NullPointerException();
+      } catch (NullPointerException ex) {
+        ex.printStackTrace();
+      }
+      handler.handle(Future.failedFuture("provoked failure"));
+      return;
+    }
+    logger.info("begin version");
     cli.get("/_/version", res -> {
-      if (res.failed()) {
-        fut.handle(res);
-      } else {
+      logger.info("end version");
+      if (res.succeeded()) {
         try {
           SemVer okapiVer = new SemVer(res.result());
         } catch (IllegalArgumentException ex) {
-          fut.handle(new Failure<>(INTERNAL,
-            "Bad version response from Okapi " + res.result() + ": " + ex.getMessage()));
+          handler.handle(Future.failedFuture(ex));
           return;
         }
-        fut.handle(new Success<>(res.result()));
+        System.out.println(res.result());
+        handler.handle(Future.succeededFuture(res.result()));
+      } else {
+        handler.handle(Future.failedFuture(res.cause()));
       }
     });
   }
 
-  private void usage(Handler<ExtendedAsyncResult<String>> fut) {
-    fut.handle(new Failure<>(USER, "No command given"));
+  private void usage(Handler<AsyncResult<String>> handler) {
+    handler.handle(Future.failedFuture("No command given"));
   }
 
-  private void start2(Handler<ExtendedAsyncResult<String>> fut) {
-    cli = new OkapiClient(okapiUrl, vertx, headers);
-    JsonArray ar = conf.getJsonArray("args");
-    if (ar == null || ar.isEmpty()) {
-      usage(fut);
+  private void setTenant(String s, Handler<AsyncResult<String>> handler) {
+    logger.info("setTenant " + s);
+    tenant = s;
+    if (s.startsWith("/")) {
+      handler.handle(Future.failedFuture("bad tenant " + s));
     } else {
-      String a = ar.getString(0);
-      if (a.equals("version")) {
-        version(res -> {
-          if (res.succeeded()) {
-            System.out.println(res.result());
-          }
-          fut.handle(res);
-        });
-      } else {
-        fut.handle(new Failure<>(USER, "Bad command " + a));
-      }
+      handler.handle(Future.succeededFuture(""));
     }
   }
+
+  private void login(String username, String password, Handler<AsyncResult<String>> handler) {
+    handler.handle(Future.succeededFuture(""));
+  }
+
+  private void start2(Handler<AsyncResult<String>> handler) {
+    cli = new OkapiClient(okapiUrl, vertx, headers);
+
+    JsonArray ar = conf.getJsonArray("args");
+    if (ar == null || ar.isEmpty()) {
+      usage(handler);
+    } else {
+      Future<String> futF = Future.future();
+
+      futF.setHandler(h -> {
+        if (h.succeeded()) {
+          logger.info("futF succeeeded");
+          handler.handle(Future.succeededFuture());
+        } else {
+          logger.info("futF failed");
+          handler.handle(Future.failedFuture(h.cause()));
+        }
+      });
+
+      Future<String> fut1 = Future.future();
+      startHandler(fut1.completer());
+      for (int i = 0; i < ar.size(); i++) {
+        String a = ar.getString(i);
+        Future<String> fut2 = Future.future();
+        if (a.startsWith("--tenant=")) {
+          fut1.compose(v -> {
+            setTenant(a.substring(9), fut2.completer());
+          }, futF);
+        } else if (a.equals("login")) {
+          final String username = ar.getString(++i);
+          final String password = ar.getString(++i);
+          fut1.compose(v -> {
+            login(username, password, fut2.completer());
+          }, futF);
+        } else if (a.equals("version")) {
+          fut1.compose(v -> {
+            version(fut2.completer());
+          }, futF);
+        } else {
+          fut1.compose(v -> {
+            fut2.fail("Bad command: " + a);
+          }, futF);
+        }
+        fut1 = fut2;
+      }
+      fut1.compose(v -> {
+        endHandler(futF.completer());
+      }, futF);
+      logger.info("Done");
+    }
+ }
 }
