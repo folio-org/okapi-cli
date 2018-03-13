@@ -48,16 +48,6 @@ public class MainVerticle extends AbstractVerticle {
 
   int count = 0;
 
-  private void startHandler(Handler<AsyncResult<String>> handler) {
-    logger.info("start");
-    handler.handle(Future.succeededFuture(""));
-  }
-
-  private void endHandler(Handler<AsyncResult<String>> handler) {
-    logger.info("end");
-    handler.handle(Future.succeededFuture(""));
-  }
-
   private void version(Handler<AsyncResult<String>> handler) {
     if (++count > 10) {
       try { // testing that we do not use stack with compose
@@ -124,7 +114,7 @@ public class MainVerticle extends AbstractVerticle {
       });
 
       Future<String> fut1 = Future.future();
-      startHandler(fut1.completer());
+      fut1.complete();
       for (int i = 0; i < ar.size(); i++) {
         String a = ar.getString(i);
         Future<String> fut2 = Future.future();
@@ -150,7 +140,7 @@ public class MainVerticle extends AbstractVerticle {
         fut1 = fut2;
       }
       fut1.compose(v -> {
-        endHandler(futF.completer());
+        futF.complete();
       }, futF);
       logger.info("Done");
     }
