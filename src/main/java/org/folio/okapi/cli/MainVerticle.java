@@ -6,10 +6,12 @@ import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 import org.folio.okapi.common.OkapiClient;
@@ -23,26 +25,29 @@ public class MainVerticle extends AbstractVerticle {
   private final Logger logger = OkapiLogger.get();
   private OkapiClient cli;
   private JsonObject conf;
-  private Vertx vertx;
   private String tenant;
+  private Buffer buf;
+  private PrintWriter out;
 
   @Override
   public void init(Vertx vertx, Context context) {
+    logger.info("OkapiCli.init");
     this.vertx = vertx;
     headers.put("Content-Type", "application/json");
     conf = context.config();
     okapiUrl = "http://localhost:9130";
+    buf = Buffer.buffer();
   }
 
   @Override
   public void start(Future<Void> fut) throws IOException {
+    logger.info("OkapiCli.start");
     start2(res -> {
       if (res.failed()) {
         fut.handle(Future.failedFuture(res.cause()));
       } else {
         fut.complete();
       }
-      vertx.close();
     });
   }
 
@@ -62,13 +67,14 @@ public class MainVerticle extends AbstractVerticle {
     cli.get("/_/version", res -> {
       logger.info("end version");
       if (res.succeeded()) {
+        logger.info("res.result()=" + res.result());
         try {
           SemVer okapiVer = new SemVer(res.result());
         } catch (IllegalArgumentException ex) {
           handler.handle(Future.failedFuture(ex));
           return;
         }
-        System.out.println(res.result());
+        buf.appendString(res.result());
         handler.handle(Future.succeededFuture(res.result()));
       } else {
         handler.handle(Future.failedFuture(res.cause()));
@@ -76,7 +82,7 @@ public class MainVerticle extends AbstractVerticle {
     });
   }
 
-  private void usage(Handler<AsyncResult<String>> handler) {
+  private void usage(Handler<AsyncResult<Void>> handler) {
     handler.handle(Future.failedFuture("No command given"));
   }
 
@@ -94,7 +100,7 @@ public class MainVerticle extends AbstractVerticle {
     handler.handle(Future.succeededFuture(""));
   }
 
-  private void start2(Handler<AsyncResult<String>> handler) {
+  private void start2(Handler<AsyncResult<Void>> handler) {
     cli = new OkapiClient(okapiUrl, vertx, headers);
 
     JsonArray ar = conf.getJsonArray("args");
@@ -105,11 +111,22 @@ public class MainVerticle extends AbstractVerticle {
 
       futF.setHandler(h -> {
         if (h.succeeded()) {
-          logger.info("futF succeeeded");
+          String fname = conf.getString("file");
+          if (fname != null) {
+            try {
+              out = new PrintWriter(fname);
+              out.print(buf.toString());
+              out.close();
+            } catch (IOException ex) {
+              handler.handle(Future.failedFuture(h.cause().getMessage()));
+            }
+          } else {
+            System.out.println(buf.toString());
+          }
           handler.handle(Future.succeededFuture());
         } else {
           logger.info("futF failed");
-          handler.handle(Future.failedFuture(h.cause()));
+          handler.handle(Future.failedFuture(h.cause().getMessage()));
         }
       });
 
@@ -118,7 +135,13 @@ public class MainVerticle extends AbstractVerticle {
       for (int i = 0; i < ar.size(); i++) {
         String a = ar.getString(i);
         Future<String> fut2 = Future.future();
-        if (a.startsWith("--tenant=")) {
+        if (a.startsWith("--okapiurl=")) {
+          fut1.compose(v -> {
+            okapiUrl = a.substring(11);
+            cli = new OkapiClient(okapiUrl, vertx, headers);
+            fut2.complete();
+          }, futF);
+        } else if (a.startsWith("--tenant=")) {
           fut1.compose(v -> {
             setTenant(a.substring(9), fut2.completer());
           }, futF);
