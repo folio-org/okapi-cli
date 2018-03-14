@@ -20,9 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import org.folio.okapi.common.OkapiLogger;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -37,14 +35,6 @@ public class OkapiCliTest {
   private String vert1;
 
   public OkapiCliTest() {
-  }
-
-  @BeforeClass
-  public static void setUpClass() {
-  }
-
-  @AfterClass
-  public static void tearDownClass() {
   }
 
   @Before
