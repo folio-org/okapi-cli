@@ -85,6 +85,7 @@ public class OkapiCliTest {
       } else {
         vertx.undeploy(res.result(), res2 -> {
           if (res2.failed()) {
+            handler.handle(Future.failedFuture(res2.cause()));
           } else {
             File f = new File("OkapiCliTest.txt");
             try {
@@ -147,7 +148,7 @@ public class OkapiCliTest {
     JsonArray ar = new JsonArray();
 
     ar.add("--okapiurl=http://localhost:" + Integer.toString(port1));
-    ar.add("--tenant=foo");
+    ar.add("--tenant=supertenant");
     ar.add("version");
     ar.add("version");
     runIt(ar, res -> {
@@ -162,11 +163,55 @@ public class OkapiCliTest {
     Async async = context.async();
     JsonArray ar = new JsonArray();
 
+    ar.add("--okapiurl=http://localhost:" + Integer.toString(port1));
+    ar.add("--tenant=foo");
+    ar.add("version");
+    runIt(ar, res -> {
+      context.assertTrue(res.failed());
+      async.complete();
+    });
+  }
+
+  @Test
+  public void test4(TestContext context) {
+    Async async = context.async();
+    JsonArray ar = new JsonArray();
+
     ar.add("--okapiurl=http://localhost:" + Integer.toString(port1 + 1));
     ar.add("version");
     runIt(ar, res -> {
       context.assertFalse(res.succeeded());
       async.complete();
+    });
+  }
+
+  @Test
+  public void testPostMd(TestContext context) {
+    Async async = context.async();
+    JsonArray ar = new JsonArray();
+    final String mod = "{\"id\": \"mod-1.0.0\", \"provides\": [], \"requires\":[]}";
+
+    ar.add("--okapiurl=http://localhost:" + Integer.toString(port1));
+    ar.add("post");
+    ar.add("/_/proxy/modules");
+    ar.add(mod);
+    ar.add("get");
+    ar.add("/_/proxy/modules");
+    ar.add("delete");
+    ar.add("/_/proxy/modules/mod-1.0.0");
+    runIt(ar, res -> {
+      context.assertTrue(res.succeeded());
+      context.assertTrue(res.result().contains("mod-1.0.0"));
+
+      ar.clear();
+      ar.add("--okapiurl=http://localhost:" + Integer.toString(port1));
+      ar.add("get");
+      ar.add("/_/proxy/modules");
+      runIt(ar, res2 -> {
+        context.assertTrue(res2.succeeded());
+        context.assertFalse(res2.result().contains("mod-1.0.0"));
+        async.complete();
+      });
     });
   }
 

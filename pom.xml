@@ -62,12 +62,12 @@
     <dependency>
       <groupId>org.folio.okapi</groupId>
       <artifactId>okapi-common</artifactId>
-      <version>2.9.4</version>
+      <version>2.9.5-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.folio.okapi</groupId>
       <artifactId>okapi-core</artifactId>
-      <version>2.9.4</version>
+      <version>2.9.5-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
     <dependency>
