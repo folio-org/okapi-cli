@@ -19,6 +19,7 @@ import java.util.Map;
 import org.folio.okapi.common.OkapiClient;
 import org.folio.okapi.common.OkapiLogger;
 import org.folio.okapi.common.SemVer;
+import org.folio.okapi.common.XOkapiHeaders;
 
 public class MainVerticle extends AbstractVerticle {
 
@@ -27,19 +28,22 @@ public class MainVerticle extends AbstractVerticle {
   private final Logger logger = OkapiLogger.get();
   private OkapiClient cli;
   private JsonObject conf;
-  private String tenant;
   private Buffer buf;
   private PrintWriter out;
   private FileSystem fs;
+  private JsonArray pullUrls;
 
   @Override
   public void init(Vertx vertx, Context context) {
     this.vertx = vertx;
     headers.put("Content-Type", "application/json");
+    headers.put("Accept", "*/*");
     conf = context.config();
     okapiUrl = "http://localhost:9130";
     buf = Buffer.buffer();
     fs = vertx.fileSystem();
+    pullUrls = new JsonArray();
+    pullUrls.add("http://folio-registry.aws.indexdata.com:80");
   }
 
   @Override
@@ -65,6 +69,7 @@ public class MainVerticle extends AbstractVerticle {
       handler.handle(Future.failedFuture("provoked failure"));
       return;
     }
+    cli.setHeaders(headers);
     cli.get("/_/version", res -> {
       if (res.succeeded()) {
         try {
@@ -89,21 +94,40 @@ public class MainVerticle extends AbstractVerticle {
     if (s.startsWith("/")) {
       handler.handle(Future.failedFuture("bad tenant " + s));
     } else {
-      tenant = s;
-      headers.put("X-Okapi-Tenant", s);
-      cli.setHeaders(headers);
+      headers.put(XOkapiHeaders.TENANT, s);
       handler.handle(Future.succeededFuture());
     }
   }
 
   private void login(String username, String password,
     Handler<AsyncResult<Void>> handler) {
+
+    JsonObject j = new JsonObject();
+    j.put("username", username);
+    j.put("password", password);
+    post("/authn/login", j.encode(), res -> {
+      if (res.failed()) {
+        handler.handle(Future.failedFuture(res.cause()));
+      } else {
+        String token = cli.getRespHeaders().get(XOkapiHeaders.TOKEN);
+        logger.info("Got token " + token);
+        if (token != null) {
+          headers.put(XOkapiHeaders.TOKEN, token);
+        }
+        handler.handle(Future.succeededFuture());
+      }
+    });
+  }
+
+  private void logout(Handler<AsyncResult<Void>> handler) {
+    headers.remove(XOkapiHeaders.TOKEN);
     handler.handle(Future.succeededFuture());
   }
 
   private void requestBuffer(HttpMethod method, String path, Buffer b,
     Handler<AsyncResult<Void>> handler) {
 
+    cli.setHeaders(headers);
     cli.request(method, path, b.toString(), res2 -> {
       if (res2.failed()) {
         handler.handle(Future.failedFuture(res2.cause()));
@@ -117,7 +141,7 @@ public class MainVerticle extends AbstractVerticle {
   private void requestFile(HttpMethod method, String path, String file,
     Handler<AsyncResult<Void>> handler) {
 
-    if (file.startsWith("{")) {
+    if (file.startsWith("{") || file.isEmpty()) {
       requestBuffer(method, path, Buffer.buffer(file), handler);
     } else {
       fs.readFile(path, res -> {
@@ -145,6 +169,12 @@ public class MainVerticle extends AbstractVerticle {
 
   private void delete(String path, Handler<AsyncResult<Void>> handler) {
     requestBuffer(HttpMethod.DELETE, path, Buffer.buffer(), handler);
+  }
+
+  private void pull(Handler<AsyncResult<Void>> handler) {
+    JsonObject j = new JsonObject();
+    j.put("urls", pullUrls);
+    post("/_/proxy/pull/modules", j.encode(), handler);
   }
 
   private void start2(Handler<AsyncResult<Void>> handler) {
@@ -196,11 +226,24 @@ public class MainVerticle extends AbstractVerticle {
           fut1.compose(v -> {
             setTenant(a.substring(9), fut2.completer());
           }, futF);
+        } else if (a.startsWith("--no-tenant")) {
+          fut1.compose(v -> {
+            headers.remove(XOkapiHeaders.TENANT);
+            fut2.complete();
+          }, futF);
         } else if (a.equals("login")) {
           final String username = ar.getString(++i);
           final String password = ar.getString(++i);
           fut1.compose(v -> {
             login(username, password, fut2.completer());
+          }, futF);
+        } else if (a.equals("logout")) {
+          fut1.compose(v -> {
+            logout(fut2.completer());
+          }, futF);
+        } else if (a.equals("pull")) {
+          fut1.compose(v -> {
+            pull(fut2.completer());
           }, futF);
         } else if (a.equals("post")) {
           final String path = ar.getString(++i);
