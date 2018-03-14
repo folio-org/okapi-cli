@@ -53,7 +53,7 @@ public class MainVerticle extends AbstractVerticle {
 
   int count = 0;
 
-  private void version(Handler<AsyncResult<String>> handler) {
+  private void version(Handler<AsyncResult<Void>> handler) {
     if (++count > 10) {
       try { // testing that we do not use stack with compose
         throw new NullPointerException();
@@ -75,7 +75,7 @@ public class MainVerticle extends AbstractVerticle {
           return;
         }
         buf.appendString(res.result());
-        handler.handle(Future.succeededFuture(res.result()));
+        handler.handle(Future.succeededFuture());
       } else {
         handler.handle(Future.failedFuture(res.cause()));
       }
@@ -86,18 +86,18 @@ public class MainVerticle extends AbstractVerticle {
     handler.handle(Future.failedFuture("No command given"));
   }
 
-  private void setTenant(String s, Handler<AsyncResult<String>> handler) {
+  private void setTenant(String s, Handler<AsyncResult<Void>> handler) {
     logger.info("setTenant " + s);
     tenant = s;
     if (s.startsWith("/")) {
       handler.handle(Future.failedFuture("bad tenant " + s));
     } else {
-      handler.handle(Future.succeededFuture(""));
+      handler.handle(Future.succeededFuture());
     }
   }
 
-  private void login(String username, String password, Handler<AsyncResult<String>> handler) {
-    handler.handle(Future.succeededFuture(""));
+  private void login(String username, String password, Handler<AsyncResult<Void>> handler) {
+    handler.handle(Future.succeededFuture());
   }
 
   private void start2(Handler<AsyncResult<Void>> handler) {
@@ -130,11 +130,11 @@ public class MainVerticle extends AbstractVerticle {
         }
       });
 
-      Future<String> fut1 = Future.future();
+      Future<Void> fut1 = Future.future();
       fut1.complete();
       for (int i = 0; i < ar.size(); i++) {
         String a = ar.getString(i);
-        Future<String> fut2 = Future.future();
+        Future<Void> fut2 = Future.future();
         if (a.startsWith("--okapiurl=")) {
           fut1.compose(v -> {
             okapiUrl = a.substring(11);
