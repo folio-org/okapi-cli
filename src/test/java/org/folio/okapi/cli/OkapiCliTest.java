@@ -244,7 +244,7 @@ public class OkapiCliTest {
     ar.add("/_/proxy/modules/mod-1.0.0");
 
     runIt(ar, res -> {
-      context.assertTrue(res.succeeded(), res.cause().getMessage());
+      context.assertTrue(res.succeeded());
       async.complete();
     });
 
