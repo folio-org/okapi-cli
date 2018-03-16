@@ -148,7 +148,8 @@ public class OkapiCliTest {
     JsonArray ar = new JsonArray();
 
     ar.add("--okapiurl=http://localhost:" + Integer.toString(port1));
-    ar.add("--tenant=supertenant");
+    ar.add("tenant");
+    ar.add("supertenant");
     ar.add("version");
     ar.add("version");
     runIt(ar, res -> {
@@ -164,7 +165,8 @@ public class OkapiCliTest {
     JsonArray ar = new JsonArray();
 
     ar.add("--okapiurl=http://localhost:" + Integer.toString(port1));
-    ar.add("--tenant=foo");
+    ar.add("tenant");
+    ar.add("foo");
     ar.add("version");
     runIt(ar, res -> {
       context.assertTrue(res.failed());
@@ -213,6 +215,66 @@ public class OkapiCliTest {
         async.complete();
       });
     });
+  }
+
+  @Test
+  public void testInstall1(TestContext context) {
+    Async async = context.async();
+    JsonArray ar = new JsonArray();
+    final String mod = "{\"id\": \"mod-1.0.0\", \"provides\": [], \"requires\":[]}";
+
+    ar.add("--okapiurl=http://localhost:" + Integer.toString(port1));
+
+    ar.add("post");
+    ar.add("/_/proxy/modules");
+    ar.add(mod);
+
+    ar.add("post");
+    ar.add("/_/proxy/tenants");
+    ar.add("{\"id\": \"testlib\"}");
+
+    ar.add("--tenant=testlib");
+    ar.add("--enable=mod-1.0.0");
+    ar.add("install");
+
+    ar.add("--disable=mod-1.0.0");
+    ar.add("install");
+
+    ar.add("delete");
+    ar.add("/_/proxy/modules/mod-1.0.0");
+
+    runIt(ar, res -> {
+      context.assertTrue(res.succeeded(), res.cause().getMessage());
+      async.complete();
+    });
+
+  }
+
+  @Test
+  public void testInstall2(TestContext context) {
+    Async async = context.async();
+    JsonArray ar = new JsonArray();
+    final String mod = "{\"id\": \"mod-1.0.0\", \"provides\": [], \"requires\":[]}";
+
+    ar.add("--okapiurl=http://localhost:" + Integer.toString(port1));
+
+    ar.add("post");
+    ar.add("/_/proxy/modules");
+    ar.add(mod);
+
+    ar.add("post");
+    ar.add("/_/proxy/tenants");
+    ar.add("{\"id\": \"testlib\"}");
+
+    ar.add("--tenant=testlib");
+    ar.add("--enable=mod-2.0.0");
+    ar.add("install");
+
+    runIt(ar, res -> {
+      context.assertFalse(res.succeeded());
+      async.complete();
+    });
+
   }
 
 }

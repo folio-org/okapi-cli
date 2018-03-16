@@ -32,6 +32,8 @@ public class MainVerticle extends AbstractVerticle {
   private PrintWriter out;
   private FileSystem fs;
   private JsonArray pullUrls;
+  private String tenant;
+  JsonArray installArray;
 
   @Override
   public void init(Vertx vertx, Context context) {
@@ -43,6 +45,7 @@ public class MainVerticle extends AbstractVerticle {
     buf = Buffer.buffer();
     fs = vertx.fileSystem();
     pullUrls = new JsonArray();
+    installArray = new JsonArray();
     pullUrls.add("http://folio-registry.aws.indexdata.com:80");
   }
 
@@ -90,36 +93,35 @@ public class MainVerticle extends AbstractVerticle {
     handler.handle(Future.failedFuture("No command given"));
   }
 
-  private void setTenant(String s, Handler<AsyncResult<Void>> handler) {
-    if (s.startsWith("/")) {
-      handler.handle(Future.failedFuture("bad tenant " + s));
-    } else {
-      headers.put(XOkapiHeaders.TENANT, s);
+  private void login(String tenant, String username, String password,
+    Handler<AsyncResult<Void>> handler) {
+
+    headers.put(XOkapiHeaders.TENANT, tenant);
+    if (username == null) {
       handler.handle(Future.succeededFuture());
+    } else {
+      JsonObject j = new JsonObject();
+      j.put("username", username);
+      if (password != null) {
+        j.put("password", password);
+      }
+      post("/authn/login", j.encode(), res -> {
+        headers.remove(XOkapiHeaders.TENANT);
+        if (res.failed()) {
+          handler.handle(Future.failedFuture(res.cause()));
+        } else {
+          String token = cli.getRespHeaders().get(XOkapiHeaders.TOKEN);
+          if (token != null) {
+            headers.put(XOkapiHeaders.TOKEN, token);
+          }
+          handler.handle(Future.succeededFuture());
+        }
+      });
     }
   }
 
-  private void login(String username, String password,
-    Handler<AsyncResult<Void>> handler) {
-
-    JsonObject j = new JsonObject();
-    j.put("username", username);
-    j.put("password", password);
-    post("/authn/login", j.encode(), res -> {
-      if (res.failed()) {
-        handler.handle(Future.failedFuture(res.cause()));
-      } else {
-        String token = cli.getRespHeaders().get(XOkapiHeaders.TOKEN);
-        logger.info("Got token " + token);
-        if (token != null) {
-          headers.put(XOkapiHeaders.TOKEN, token);
-        }
-        handler.handle(Future.succeededFuture());
-      }
-    });
-  }
-
   private void logout(Handler<AsyncResult<Void>> handler) {
+    headers.remove(XOkapiHeaders.TENANT);
     headers.remove(XOkapiHeaders.TOKEN);
     handler.handle(Future.succeededFuture());
   }
@@ -177,6 +179,19 @@ public class MainVerticle extends AbstractVerticle {
     post("/_/proxy/pull/modules", j.encode(), handler);
   }
 
+  private void install(Handler<AsyncResult<Void>> handler) {
+    if (tenant == null) {
+      handler.handle(Future.failedFuture("Tenant not set (use --tenant=val)"));
+    } else if (installArray.isEmpty()) {
+      handler.handle(Future.failedFuture("Nothing to install"));
+    } else {
+      Buffer b = installArray.toBuffer();
+      installArray.clear();
+      requestBuffer(HttpMethod.POST, "/_/proxy/tenants/" + tenant + "/install",
+        b, handler);
+    }
+  }
+
   private void start2(Handler<AsyncResult<Void>> handler) {
     cli = new OkapiClient(okapiUrl, vertx, headers);
 
@@ -224,18 +239,41 @@ public class MainVerticle extends AbstractVerticle {
           }, futF);
         } else if (a.startsWith("--tenant=")) {
           fut1.compose(v -> {
-            setTenant(a.substring(9), fut2.completer());
+            tenant = a.substring(9);
+            fut2.complete();
+          }, futF);
+        } else if (a.startsWith("--enable=")) {
+          fut1.compose(v -> {
+            JsonObject j = new JsonObject();
+            j.put("action", "enable");
+            j.put("id", a.substring(9));
+            installArray.add(j);
+            fut2.complete();
+          }, futF);
+        } else if (a.startsWith("--disable=")) {
+          fut1.compose(v -> {
+            JsonObject j = new JsonObject();
+            j.put("action", "disable");
+            j.put("id", a.substring(10));
+            installArray.add(j);
+            fut2.complete();
           }, futF);
         } else if (a.startsWith("--no-tenant")) {
           fut1.compose(v -> {
-            headers.remove(XOkapiHeaders.TENANT);
+            tenant = null;
             fut2.complete();
           }, futF);
+        } else if (a.equals("tenant")) {
+          final String tenant = ar.getString(++i);
+          fut1.compose(v -> {
+            login(tenant, null, null, fut2.completer());
+          }, futF);
         } else if (a.equals("login")) {
+          final String tenant = ar.getString(++i);
           final String username = ar.getString(++i);
           final String password = ar.getString(++i);
           fut1.compose(v -> {
-            login(username, password, fut2.completer());
+            login(tenant, username, password, fut2.completer());
           }, futF);
         } else if (a.equals("logout")) {
           fut1.compose(v -> {
@@ -244,6 +282,10 @@ public class MainVerticle extends AbstractVerticle {
         } else if (a.equals("pull")) {
           fut1.compose(v -> {
             pull(fut2.completer());
+          }, futF);
+        } else if (a.equals("install")) {
+          fut1.compose(v -> {
+            install(fut2.completer());
           }, futF);
         } else if (a.equals("post")) {
           final String path = ar.getString(++i);
