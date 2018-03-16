@@ -25,7 +25,7 @@ Running
 
 should produce fat jar. Invoke with
 
-    $ java -jar target/mod-okapi-cli-fat.jar [args]
+    $ java -jar target/okapi-cli-fat.jar [args]
 
 (should be called from a shell script in the future)
 
