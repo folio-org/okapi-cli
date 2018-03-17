@@ -31,13 +31,13 @@ should produce fat jar. Invoke with
 
 ### Other documentation
 
-Other [modules](http://dev.folio.org/source-code/#server-side) are described,
-with further FOLIO Developer documentation at [dev.folio.org](http://dev.folio.org/)
+Other [modules](https://dev.folio.org/source-code/#server-side) are described,
+with further FOLIO Developer documentation at [dev.folio.org](https://dev.folio.org/)
 
 See also [Okapi](https://github.com/folio-org/okapi) itself.
 
 ### Issue tracker
 
 See project [OKCLI](https://issues.folio.org/browse/OKCLI)
-at the [FOLIO issue tracker](http://dev.folio.org/community/guide-issues).
+at the [FOLIO issue tracker](https://dev.folio.org/community/guide-issues).
 
