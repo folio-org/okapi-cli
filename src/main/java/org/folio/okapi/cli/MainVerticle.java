@@ -24,34 +24,48 @@ import org.folio.okapi.common.XOkapiHeaders;
 public class MainVerticle extends AbstractVerticle {
 
   private Map<String, String> headers = new HashMap<>();
-  private String okapiUrl;
   private final Logger logger = OkapiLogger.get();
   private OkapiClient cli;
-  private JsonObject conf;
+  private JsonObject vertxConfig;
+  private JsonObject cliConfig;
   private Buffer buf;
   private PrintWriter out;
   private FileSystem fs;
-  private JsonArray pullUrls;
   private String tenant;
-  JsonArray installArray;
+  private JsonArray installArray;
+  private String confFname;
 
   @Override
   public void init(Vertx vertx, Context context) {
+    logger.info("init begin");
     this.vertx = vertx;
-    headers.put("Content-Type", "application/json");
-    headers.put("Accept", "*/*");
-    conf = context.config();
-    okapiUrl = "http://localhost:9130";
     buf = Buffer.buffer();
     fs = vertx.fileSystem();
-    pullUrls = new JsonArray();
+    headers.put("Content-Type", "application/json");
+    headers.put("Accept", "*/*");
+    vertxConfig = context.config();
+    cliConfig = new JsonObject();
+    cliConfig.put("okapiUrl", "http://localhost:9130");
     installArray = new JsonArray();
+    JsonArray pullUrls = new JsonArray();
     pullUrls.add("http://folio-registry.aws.indexdata.com:80");
+    cliConfig.put("pullUrls", pullUrls);
+    confFname = vertxConfig.getString("okapi-cli-config-fname");
+    if (confFname == null) {
+      final String home = System.getProperty("user.home");
+      if (home != null) {
+        confFname = home + "/" + ".okapi.cli";
+      } else {
+        confFname = ".okapi.cli";
+      }
+    }
+    logger.info("init done");
   }
 
   @Override
   public void start(Future<Void> fut) throws IOException {
-    start2(res -> {
+    logger.info("start");
+    start1(res -> {
       if (res.failed()) {
         fut.handle(Future.failedFuture(res.cause()));
       } else {
@@ -175,7 +189,7 @@ public class MainVerticle extends AbstractVerticle {
 
   private void pull(Handler<AsyncResult<Void>> handler) {
     JsonObject j = new JsonObject();
-    j.put("urls", pullUrls);
+    j.put("urls", cliConfig.getJsonArray("pullUrls"));
     post("/_/proxy/pull/modules", j.encode(), handler);
   }
 
@@ -192,10 +206,64 @@ public class MainVerticle extends AbstractVerticle {
     }
   }
 
-  private void start2(Handler<AsyncResult<Void>> handler) {
-    cli = new OkapiClient(okapiUrl, vertx, headers);
+  private void readConf(Handler<AsyncResult<Void>> handler)
+  {
+    fs.readFile(confFname, res -> {
+      if (res.failed()) {
+        logger.warn(confFname + ": " + res.cause().getMessage());
+      } else {
+        logger.info("reading " + confFname + "  OK");
+        Buffer buf = res.result();
+        cliConfig = new JsonObject(buf);
+        tenant = cliConfig.getString("tenant");
+        final String token = cliConfig.getString(XOkapiHeaders.TOKEN);
+        if (token != null) {
+          headers.put(XOkapiHeaders.TOKEN, token);
+        }
+        final String tenant = cliConfig.getString(XOkapiHeaders.TENANT);
+        if (tenant != null) {
+          headers.put(XOkapiHeaders.TENANT, tenant);
+        }
+      }
+      handler.handle(Future.succeededFuture());
+    });
+  }
 
-    JsonArray ar = conf.getJsonArray("args");
+  private void confPut(String key, String val) {
+    if (val == null) {
+      cliConfig.remove(key);
+    } else {
+      cliConfig.put(key, val);
+    }
+  }
+  private void writeConf(Handler<AsyncResult<Void>> handler) {
+    confPut("tenant", tenant);
+    confPut(XOkapiHeaders.TOKEN, headers.get(XOkapiHeaders.TOKEN));
+    confPut(XOkapiHeaders.TENANT, headers.get(XOkapiHeaders.TENANT));
+    fs.writeFile(confFname, cliConfig.toBuffer(), handler);
+  }
+
+  private void start1(Handler<AsyncResult<Void>> handler) {
+    logger.info("start1");
+    readConf(res -> {
+      start2(res1 -> {
+        writeConf(res2 -> {
+          if (res1.failed()) {
+            handler.handle(Future.failedFuture(res1.cause()));
+          } else if (res2.failed()) {
+            handler.handle(Future.failedFuture(res2.cause()));
+          } else {
+            handler.handle(Future.succeededFuture());
+          }
+        });
+      });
+    });
+  }
+
+  private void start2(Handler<AsyncResult<Void>> handler) {
+    cli = new OkapiClient(cliConfig.getString("okapiUrl"), vertx, headers);
+
+    JsonArray ar = vertxConfig.getJsonArray("args");
     if (ar == null || ar.isEmpty()) {
       usage(handler);
     } else {
@@ -203,7 +271,7 @@ public class MainVerticle extends AbstractVerticle {
 
       futF.setHandler(h -> {
         if (h.succeeded()) {
-          String fname = conf.getString("file");
+          String fname = vertxConfig.getString("file");
           if (fname != null) {
             try {
               out = new PrintWriter(fname);
@@ -228,18 +296,29 @@ public class MainVerticle extends AbstractVerticle {
       for (int i = 0; i < ar.size(); i++) {
         String a = ar.getString(i);
         Future<Void> fut2 = Future.future();
-        if (a.startsWith("--okapiurl=")) {
+        if (a.startsWith("--okapi-url=")) {
           fut1.compose(v -> {
-            okapiUrl = a.substring(11);
+            final String url = a.substring(12);
+            cliConfig.put("okapiUrl", url);
             if (cli != null) {
               cli.close();
             }
-            cli = new OkapiClient(okapiUrl, vertx, headers);
+            cli = new OkapiClient(url, vertx, headers);
             fut2.complete();
           }, futF);
         } else if (a.startsWith("--tenant=")) {
           fut1.compose(v -> {
             tenant = a.substring(9);
+            fut2.complete();
+          }, futF);
+        } else if (a.startsWith("--pull-url=")) {
+          fut1.compose(v -> {
+            final String [] urls = a.substring(11).split(",");
+            JsonArray pullUrls = new JsonArray();
+            for (String url : urls) {
+              pullUrls.add(url);
+            }
+            cliConfig.put("pullUrls", pullUrls);
             fut2.complete();
           }, futF);
         } else if (a.startsWith("--enable=")) {
