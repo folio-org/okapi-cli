@@ -10,4 +10,5 @@ nbproject/
 .settings/
 .classpath
 .idea
-OkapiCliTest.txt
+okapi-cli-output.txt
+okapi-cli-config.txt

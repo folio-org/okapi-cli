@@ -47,7 +47,7 @@ public class OkapiCliTest {
     DeploymentOptions opt = new DeploymentOptions()
       .setConfig(new JsonObject().put("port", Integer.toString(port1)));
     fs = vertx.fileSystem();
-    fs.delete("dot.okapi.cli", res2 -> {
+    fs.delete("okapi-cli-config.txt", res2 -> {
       vertx.deployVerticle(org.folio.okapi.MainVerticle.class.getName(), opt, res -> {
         if (res.failed()) {
           context.fail(res.cause());
@@ -80,20 +80,21 @@ public class OkapiCliTest {
   private void runIt(JsonArray ar, Handler<AsyncResult<String>> handler) {
     DeploymentOptions opt = new DeploymentOptions();
     JsonObject j = new JsonObject();
-    j.put("file", "OkapiCliTest.txt");
-    j.put("okapi-cli-config-fname", "dot.okapi.cli");
+    j.put("okapi-cli-output-file", "okapi-cli-output.txt");
+    j.put("okapi-cli-config-file", "okapi-cli-config.txt");
     j.put("args", ar);
     opt.setConfig(j);
 
     vertx.deployVerticle(new MainVerticle(), opt, res -> {
       if (res.failed()) {
+        logger.info("cause : " + res.cause().getMessage());
         handler.handle(Future.failedFuture(res.cause()));
       } else {
         vertx.undeploy(res.result(), res2 -> {
           if (res2.failed()) {
             handler.handle(Future.failedFuture(res2.cause()));
           } else {
-            File f = new File("OkapiCliTest.txt");
+            File f = new File(j.getString("okapi-cli-output-file"));
             try {
               byte[] bytes = Files.readAllBytes(f.toPath());
               handler.handle(Future.succeededFuture(new String(bytes)));
@@ -272,15 +273,85 @@ public class OkapiCliTest {
     ar.add("/_/proxy/tenants");
     ar.add("{\"id\": \"testlib\"}");
 
+    // fails because modules does not exist
     ar.add("--tenant=testlib");
     ar.add("--enable=mod-2.0.0");
     ar.add("install");
 
     runIt(ar, res -> {
-      context.assertFalse(res.succeeded());
+      context.assertTrue(res.failed());
       async.complete();
     });
 
+  }
+
+  @Test
+  public void testPut(TestContext context) {
+    Async async = context.async();
+    JsonArray ar = new JsonArray();
+
+    ar.add("--okapi-url=http://localhost:" + Integer.toString(port1));
+
+    ar.add("post");
+    ar.add("/_/proxy/tenants");
+    ar.add("{\"id\": \"testlib\"}");
+
+    ar.add("put");
+    ar.add("/_/proxy/tenants/testlib");
+    ar.add("{\"id\": \"testlib\", \"name\" : \"Test Library\"}");
+
+    ar.add("get");
+    ar.add("/_/proxy/tenants/testlib");
+
+    runIt(ar, res -> {
+      context.assertTrue(res.succeeded());
+      context.assertTrue(res.result().contains("Test Library"));
+
+      async.complete();
+    });
+  }
+
+  @Test
+  public void testHelp(TestContext context) {
+    Async async = context.async();
+    JsonArray ar = new JsonArray();
+
+    ar.add("help");
+    runIt(ar, res -> {
+      context.assertTrue(res.succeeded());
+      async.complete();
+    });
+  }
+
+  @Test
+  public void testLogon(TestContext context) {
+    Async async = context.async();
+    JsonArray ar = new JsonArray();
+
+    ar.add("--okapi-url=http://localhost:" + Integer.toString(port1));
+    ar.add("login");
+    ar.add("testlib");
+    ar.add("testuser");
+    ar.add("testpass");
+    runIt(ar, res -> {
+      context.assertTrue(res.failed());
+      async.complete();
+    });
+  }
+
+  @Test
+  public void testLogout(TestContext context) {
+    Async async = context.async();
+    JsonArray ar = new JsonArray();
+
+    ar.add("--okapi-url=http://localhost:" + Integer.toString(port1));
+    ar.add("tenant");
+    ar.add("testlib");
+    ar.add("logout");
+    runIt(ar, res -> {
+      context.assertTrue(res.succeeded());
+      async.complete();
+    });
   }
 
 }
