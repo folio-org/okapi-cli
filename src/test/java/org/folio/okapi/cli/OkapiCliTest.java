@@ -247,6 +247,8 @@ public class OkapiCliTest {
     ar.add("--disable=mod-1.0.0");
     ar.add("install");
 
+    ar.add("--no-tenant");
+
     ar.add("delete");
     ar.add("/_/proxy/modules/mod-1.0.0");
 
@@ -350,6 +352,41 @@ public class OkapiCliTest {
     ar.add("logout");
     runIt(ar, res -> {
       context.assertTrue(res.succeeded());
+      async.complete();
+    });
+  }
+
+  @Test
+  public void testNoCommand(TestContext context) {
+    Async async = context.async();
+    JsonArray ar = new JsonArray();
+
+    runIt(ar, res -> {
+      context.assertTrue(res.failed());
+      async.complete();
+    });
+  }
+
+  @Test
+  public void testMissingArgs(TestContext context) {
+    Async async = context.async();
+    JsonArray ar = new JsonArray();
+
+    ar.add("get");
+    runIt(ar, res -> {
+      context.assertTrue(res.failed());
+      async.complete();
+    });
+  }
+
+  @Test
+  public void testBadCommand(TestContext context) {
+    Async async = context.async();
+    JsonArray ar = new JsonArray();
+
+    ar.add("foocommand");
+    runIt(ar, res -> {
+      context.assertTrue(res.failed());
       async.complete();
     });
   }
