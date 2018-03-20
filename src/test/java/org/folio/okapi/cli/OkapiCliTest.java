@@ -92,7 +92,7 @@ public class OkapiCliTest {
         vertx.undeploy(res.result(), res2 -> {
           if (res2.failed()) {
             handler.handle(Future.failedFuture(res2.cause()));
-          } else {            
+          } else {
             File f = new File("OkapiCliTest.txt");
             try {
               byte[] bytes = Files.readAllBytes(f.toPath());
