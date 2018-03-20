@@ -6,6 +6,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.file.FileSystem;
 import io.vertx.core.http.HttpClient;
 import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.json.JsonArray;
@@ -33,6 +34,7 @@ public class OkapiCliTest {
   private static final String LS = System.lineSeparator();
   private final int port1 = 9230;
   private String vert1;
+  private FileSystem fs;
 
   public OkapiCliTest() {
   }
@@ -44,13 +46,16 @@ public class OkapiCliTest {
 
     DeploymentOptions opt = new DeploymentOptions()
       .setConfig(new JsonObject().put("port", Integer.toString(port1)));
-    vertx.deployVerticle(org.folio.okapi.MainVerticle.class.getName(), opt, res -> {
-      if (res.failed()) {
-        context.fail(res.cause());
-      } else {
-        vert1 = res.result();
-        async.complete();
-      }
+    fs = vertx.fileSystem();
+    fs.delete("dot.okapi.cli", res2 -> {
+      vertx.deployVerticle(org.folio.okapi.MainVerticle.class.getName(), opt, res -> {
+        if (res.failed()) {
+          context.fail(res.cause());
+        } else {
+          vert1 = res.result();
+          async.complete();
+        }
+      });
     });
   }
 
@@ -76,6 +81,7 @@ public class OkapiCliTest {
     DeploymentOptions opt = new DeploymentOptions();
     JsonObject j = new JsonObject();
     j.put("file", "OkapiCliTest.txt");
+    j.put("okapi-cli-config-fname", "dot.okapi.cli");
     j.put("args", ar);
     opt.setConfig(j);
 
@@ -86,7 +92,7 @@ public class OkapiCliTest {
         vertx.undeploy(res.result(), res2 -> {
           if (res2.failed()) {
             handler.handle(Future.failedFuture(res2.cause()));
-          } else {
+          } else {            
             File f = new File("OkapiCliTest.txt");
             try {
               byte[] bytes = Files.readAllBytes(f.toPath());
@@ -132,7 +138,7 @@ public class OkapiCliTest {
     Async async = context.async();
     JsonArray ar = new JsonArray();
 
-    ar.add("--okapiurl=http://localhost:" + Integer.toString(port1));
+    ar.add("--okapi-url=http://localhost:" + Integer.toString(port1));
     ar.add("version");
     runIt(ar, res -> {
       context.assertTrue(res.succeeded());
@@ -147,7 +153,7 @@ public class OkapiCliTest {
     Async async = context.async();
     JsonArray ar = new JsonArray();
 
-    ar.add("--okapiurl=http://localhost:" + Integer.toString(port1));
+    ar.add("--okapi-url=http://localhost:" + Integer.toString(port1));
     ar.add("tenant");
     ar.add("supertenant");
     ar.add("version");
@@ -164,7 +170,7 @@ public class OkapiCliTest {
     Async async = context.async();
     JsonArray ar = new JsonArray();
 
-    ar.add("--okapiurl=http://localhost:" + Integer.toString(port1));
+    ar.add("--okapi-url=http://localhost:" + Integer.toString(port1));
     ar.add("tenant");
     ar.add("foo");
     ar.add("version");
@@ -179,7 +185,7 @@ public class OkapiCliTest {
     Async async = context.async();
     JsonArray ar = new JsonArray();
 
-    ar.add("--okapiurl=http://localhost:" + Integer.toString(port1 + 1));
+    ar.add("--okapi-url=http://localhost:" + Integer.toString(port1 + 1));
     ar.add("version");
     runIt(ar, res -> {
       context.assertFalse(res.succeeded());
@@ -193,7 +199,7 @@ public class OkapiCliTest {
     JsonArray ar = new JsonArray();
     final String mod = "{\"id\": \"mod-1.0.0\", \"provides\": [], \"requires\":[]}";
 
-    ar.add("--okapiurl=http://localhost:" + Integer.toString(port1));
+    ar.add("--okapi-url=http://localhost:" + Integer.toString(port1));
     ar.add("post");
     ar.add("/_/proxy/modules");
     ar.add(mod);
@@ -206,7 +212,7 @@ public class OkapiCliTest {
       context.assertTrue(res.result().contains("mod-1.0.0"));
 
       ar.clear();
-      ar.add("--okapiurl=http://localhost:" + Integer.toString(port1));
+      ar.add("--okapi-url=http://localhost:" + Integer.toString(port1));
       ar.add("get");
       ar.add("/_/proxy/modules");
       runIt(ar, res2 -> {
@@ -223,7 +229,7 @@ public class OkapiCliTest {
     JsonArray ar = new JsonArray();
     final String mod = "{\"id\": \"mod-1.0.0\", \"provides\": [], \"requires\":[]}";
 
-    ar.add("--okapiurl=http://localhost:" + Integer.toString(port1));
+    ar.add("--okapi-url=http://localhost:" + Integer.toString(port1));
 
     ar.add("post");
     ar.add("/_/proxy/modules");
@@ -256,7 +262,7 @@ public class OkapiCliTest {
     JsonArray ar = new JsonArray();
     final String mod = "{\"id\": \"mod-1.0.0\", \"provides\": [], \"requires\":[]}";
 
-    ar.add("--okapiurl=http://localhost:" + Integer.toString(port1));
+    ar.add("--okapi-url=http://localhost:" + Integer.toString(port1));
 
     ar.add("post");
     ar.add("/_/proxy/modules");
