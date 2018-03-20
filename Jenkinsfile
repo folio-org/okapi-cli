@@ -1,6 +1,6 @@
 buildMvn {
   publishModDescriptor = 'no'
-  publishAPI = 'yes'
+  publishAPI = 'no'
   mvnDeploy = 'yes'
 }
 
