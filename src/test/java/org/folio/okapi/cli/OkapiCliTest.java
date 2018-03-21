@@ -240,6 +240,7 @@ public class OkapiCliTest {
     ar.add("/_/proxy/tenants");
     ar.add("{\"id\": \"testlib\"}");
 
+    ar.add("--deploy=false");
     ar.add("--tenant=testlib");
     ar.add("--enable=mod-1.0.0");
     ar.add("install");

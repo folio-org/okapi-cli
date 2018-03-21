@@ -33,7 +33,8 @@ public class CommandInstall implements Command {
     } else {
       Buffer b = v.installArray.toBuffer();
       v.installArray.clear();
-      v.requestBuffer(HttpMethod.POST, "/_/proxy/tenants/" + v.tenant + "/install",
+      v.requestBuffer(HttpMethod.POST, "/_/proxy/tenants/" + v.tenant
+        + "/install?deploy=" + v.cliConfig.getString("deploy"),
         b, handler);
     }
   }

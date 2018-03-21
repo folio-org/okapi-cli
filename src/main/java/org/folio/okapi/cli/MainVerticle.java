@@ -46,6 +46,7 @@ public class MainVerticle extends AbstractVerticle {
     headers.put("Accept", "*/*");
     vertxConfig = context.config();
     cliConfig = new JsonObject();
+    cliConfig.put("deploy", "false");
     cliConfig.put("okapiUrl", "http://localhost:9130");
     installArray = new JsonArray();
     JsonArray pullUrls = new JsonArray();
@@ -266,6 +267,12 @@ public class MainVerticle extends AbstractVerticle {
               pullUrls.add(url);
             }
             cliConfig.put("pullUrls", pullUrls);
+            fut2.complete();
+          }, futF);
+        } else if (a.startsWith("--deploy=")) {
+          fut1.compose(v -> {
+            JsonObject j = new JsonObject();
+            cliConfig.put("deploy", a.substring(9));
             fut2.complete();
           }, futF);
         } else if (a.startsWith("--enable=")) {
