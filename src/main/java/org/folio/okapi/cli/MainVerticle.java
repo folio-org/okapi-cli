@@ -199,19 +199,7 @@ public class MainVerticle extends AbstractVerticle {
 
   private void start2(Handler<AsyncResult<Void>> handler) {
     cli = new OkapiClient(cliConfig.getString("okapiUrl"), vertx, headers);
-
-    List<Command> commands = new LinkedList<>();
-    commands.add(new CommandDelete());
-    commands.add(new CommandEnv());
-    commands.add(new CommandGet());
-    commands.add(new CommandInstall());
-    commands.add(new CommandLogin());
-    commands.add(new CommandLogout());
-    commands.add(new CommandPost());
-    commands.add(new CommandPull());
-    commands.add(new CommandPut());
-    commands.add(new CommandTenant());
-    commands.add(new CommandVersion());
+    CommandFactory factory = new CommandFactory();
 
     JsonArray ar = vertxConfig.getJsonArray("args");
     if (ar == null || ar.isEmpty()) {
@@ -241,36 +229,26 @@ public class MainVerticle extends AbstractVerticle {
 
       Future<Void> fut1 = Future.future();
       fut1.complete();
-      for (int i = 0; i < ar.size(); i++) {
+      int i = 0;
+      while (i < ar.size()) {
         String a = ar.getString(i);
         logger.info("Inspecting a=" + a + " i=" + i);
         Future<Void> fut2 = Future.future();
 
-        Command cmd = null;
-        for (Command c : commands) {
-          if (c.getName().equals(a)) {
-            cmd = c;
-            break;
-          }
-        }
+        Command cmd = factory.create(a);
         if (cmd != null) {
           int no = cmd.getNoArgs();
           if (i + no >= ar.size()) {
-            fut1.compose(v -> {
-              fut2.fail("Missing args for command: " + a);
-            }, futF);
+            fut1.compose(v -> fut2.fail("Missing args for command: " + a), futF);
           } else {
             final int offset = i + 1;
             final Command fCmd = cmd;
-            fut1.compose(v -> {
-              fCmd.run(this, ar, offset, fut2.completer());
-            }, futF);
+            fut1.compose(v -> fCmd.run(this, ar, offset, fut2.completer()), futF);
             i += no;
           }
         } else if (a.equals("help")) {
-          for (Command c : commands) {
-            System.out.println(c.getDescription());
-          }
+          factory.help();
+          i++;
           continue;
         } else if (a.startsWith("--okapi-url=")) {
           fut1.compose(v -> {
@@ -299,7 +277,6 @@ public class MainVerticle extends AbstractVerticle {
           }, futF);
         } else if (a.startsWith("--deploy=")) {
           fut1.compose(v -> {
-            JsonObject j = new JsonObject();
             cliConfig.put("deploy", a.substring(9));
             fut2.complete();
           }, futF);
@@ -325,15 +302,12 @@ public class MainVerticle extends AbstractVerticle {
             fut2.complete();
           }, futF);
         } else {
-          fut1.compose(v -> {
-            fut2.fail("Bad command: " + a);
-          }, futF);
+          fut1.compose(v -> fut2.fail("Bad command: " + a), futF);
         }
         fut1 = fut2;
+        i++;
       }
-      fut1.compose(v -> {
-        futF.complete();
-      }, futF);
+      fut1.compose(v -> futF.complete(), futF);
     }
  }
 }
