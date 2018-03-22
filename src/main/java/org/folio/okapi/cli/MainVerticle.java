@@ -173,6 +173,7 @@ public class MainVerticle extends AbstractVerticle {
 
     List<Command> commands = new LinkedList<>();
     commands.add(new CommandDelete());
+    commands.add(new CommandEnv());
     commands.add(new CommandGet());
     commands.add(new CommandInstall());
     commands.add(new CommandLogin());

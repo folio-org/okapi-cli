@@ -392,4 +392,27 @@ public class OkapiCliTest {
     });
   }
 
+  @Test
+  public void testEnv(TestContext context) {
+    Async async = context.async();
+    JsonArray ar = new JsonArray();
+
+    ar.add("--okapi-url=http://localhost:" + Integer.toString(port1));
+    ar.add("env");
+    ar.add("v1=n1");
+    ar.add("env");
+    ar.add("v2=n2");
+    ar.add("env");
+    ar.add("v1");
+    ar.add("env");
+    ar.add("v1=");
+    ar.add("env");
+    ar.add("v2");
+    runIt(ar, res -> {
+      context.assertTrue(res.succeeded());
+      logger.info(res.result());
+      async.complete();
+    });
+  }
+
 }
