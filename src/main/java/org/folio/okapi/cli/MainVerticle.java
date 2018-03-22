@@ -16,8 +16,6 @@ import io.vertx.core.logging.Logger;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import org.folio.okapi.common.OkapiClient;
 import org.folio.okapi.common.OkapiLogger;
@@ -83,15 +81,13 @@ public class MainVerticle extends AbstractVerticle {
     }
     try {
       obj.put(key, b.toJsonObject());
-      return;
-    } catch (DecodeException ex) {
+    } catch (DecodeException ex1) {
+      try {
+        obj.put(key, b.toJsonArray());
+      } catch (DecodeException ex2) {
+        obj.put(key, b.toString());
+      }
     }
-    try {
-      obj.put(key, b.toJsonArray());
-      return;
-    } catch (DecodeException ex) {
-    }
-    obj.put(key, b.toString());
   }
 
   private void usage(Handler<AsyncResult<Void>> handler) {
@@ -144,7 +140,14 @@ public class MainVerticle extends AbstractVerticle {
     }
   }
 
-  private void readConf(Handler<AsyncResult<Void>> handler)  {
+  private void confGet(String key) {
+    final String val = cliConfig.getString(key);
+    if (val != null) {
+      headers.put(key, val);
+    }
+  }
+
+  private void readConf(Handler<AsyncResult<Void>> handler) {
     fs.readFile(confFname, res -> {
       if (res.failed()) {
         logger.warn(confFname + ": " + res.cause().getMessage());
@@ -153,14 +156,9 @@ public class MainVerticle extends AbstractVerticle {
         Buffer buf = res.result();
         cliConfig = new JsonObject(buf);
         tenant = cliConfig.getString("tenant");
-        final String token = cliConfig.getString(XOkapiHeaders.TOKEN);
-        if (token != null) {
-          headers.put(XOkapiHeaders.TOKEN, token);
-        }
-        final String tenant = cliConfig.getString(XOkapiHeaders.TENANT);
-        if (tenant != null) {
-          headers.put(XOkapiHeaders.TENANT, tenant);
-        }
+
+        confGet(XOkapiHeaders.TOKEN);
+        confGet(XOkapiHeaders.TENANT);
       }
       handler.handle(Future.succeededFuture());
     });
@@ -182,19 +180,19 @@ public class MainVerticle extends AbstractVerticle {
 
   private void start1(Handler<AsyncResult<Void>> handler) {
     logger.info("start1");
-    readConf(res -> {
-      start2(res1 -> {
-        writeConf(res2 -> {
-          if (res1.failed()) {
-            handler.handle(Future.failedFuture(res1.cause()));
-          } else if (res2.failed()) {
-            handler.handle(Future.failedFuture(res2.cause()));
-          } else {
-            handler.handle(Future.succeededFuture());
-          }
-        });
-      });
-    });
+    readConf(res
+      -> start2(res1
+        -> writeConf(res2 -> {
+        if (res1.failed()) {
+          handler.handle(Future.failedFuture(res1.cause()));
+        } else if (res2.failed()) {
+          handler.handle(Future.failedFuture(res2.cause()));
+        } else {
+          handler.handle(Future.succeededFuture());
+        }
+      })
+      )
+    );
   }
 
   private void start2(Handler<AsyncResult<Void>> handler) {

@@ -22,7 +22,6 @@ public class CommandFactory {
   }
 
   Command create(String arg) {
-    Command cmd = null;
     for (Command c : commands) {
       if (c.getName().equals(arg)) {
         return c;
