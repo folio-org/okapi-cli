@@ -9,18 +9,8 @@ import io.vertx.core.json.JsonArray;
 public class CommandGet implements Command {
 
   @Override
-  public String getName() {
-    return "get";
-  }
-
-  @Override
-  public int getNoArgs() {
-    return 1;
-  }
-
-  @Override
   public String getDescription() {
-    return "get <path> : HTTP GET";
+    return "get <path>: HTTP GET";
   }
 
   @Override

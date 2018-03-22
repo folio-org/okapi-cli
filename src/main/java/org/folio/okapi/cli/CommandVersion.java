@@ -7,17 +7,6 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonArray;
 
 public class CommandVersion implements Command {
-
-  @Override
-  public String getName() {
-    return "version";
-  }
-
-  @Override
-  public int getNoArgs() {
-    return 0;
-  }
-
   @Override
   public String getDescription() {
     return "version: show Okapi version";

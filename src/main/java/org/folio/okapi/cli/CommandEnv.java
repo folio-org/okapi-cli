@@ -8,20 +8,9 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public class CommandEnv implements Command {
-
-  @Override
-  public String getName() {
-    return "env";
-  }
-
-  @Override
-  public int getNoArgs() {
-    return 1;
-  }
-
   @Override
   public String getDescription() {
-    return "env <var>=<value> : sets <var> to <value> ; or unsets if <value> is empty";
+    return "env <var>=<value>: sets <var> to <value> ; or unsets if <value> is empty";
   }
 
   @Override

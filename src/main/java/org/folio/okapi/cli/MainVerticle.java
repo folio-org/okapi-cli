@@ -235,7 +235,7 @@ public class MainVerticle extends AbstractVerticle {
 
         Command cmd = factory.create(a);
         if (cmd != null) {
-          int no = cmd.getNoArgs();
+          int no = factory.noArgs(cmd);
           if (i + no >= ar.size()) {
             fut1.compose(v -> fut2.fail("Missing args for command: " + a), futF);
           } else {

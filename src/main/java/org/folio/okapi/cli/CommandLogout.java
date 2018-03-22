@@ -9,16 +9,6 @@ import org.folio.okapi.common.XOkapiHeaders;
 public class CommandLogout implements Command {
 
   @Override
-  public String getName() {
-    return "logout";
-  }
-
-  @Override
-  public int getNoArgs() {
-    return 0;
-  }
-
-  @Override
   public String getDescription() {
     return "logout: removes token and tenant from session";
   }

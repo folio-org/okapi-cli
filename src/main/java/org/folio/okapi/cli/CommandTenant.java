@@ -7,20 +7,9 @@ import io.vertx.core.json.JsonArray;
 import org.folio.okapi.common.XOkapiHeaders;
 
 public class CommandTenant implements Command {
-
-  @Override
-  public String getName() {
-    return "tenant";
-  }
-
-  @Override
-  public int getNoArgs() {
-    return 1;
-  }
-
   @Override
   public String getDescription() {
-    return "tenant <tenant> : act as tenant";
+    return "tenant <tenant>: act as tenant";
   }
 
   @Override

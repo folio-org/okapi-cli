@@ -7,17 +7,6 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public class CommandPull implements Command {
-
-  @Override
-  public String getName() {
-    return "pull";
-  }
-
-  @Override
-  public int getNoArgs() {
-    return 0;
-  }
-
   @Override
   public String getDescription() {
     return "pull: pull module descriptors from remote repository";

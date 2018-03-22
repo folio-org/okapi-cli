@@ -23,11 +23,35 @@ public class CommandFactory {
 
   Command create(String arg) {
     for (Command c : commands) {
-      if (c.getName().equals(arg)) {
+      String des = c.getDescription();
+      int i;
+      for (i = 0; i < des.length(); i++) {
+        char ch = des.charAt(i);
+        if (ch == ' ' || ch == ':') {
+          break;
+        }
+      }
+      String cmdName = des.substring(0, i);
+      if (cmdName.equals(arg)) {
         return c;
       }
     }
     return null;
+  }
+
+  public int noArgs(Command command) {
+    final String des = command.getDescription();
+    int no = 0;
+    for (int i = 0; i < des.length(); i++) {
+      char c = des.charAt(i);
+      if (c == ':') {
+        break;
+      }
+      if (c == ' ') {
+        no++;
+      }
+    }
+    return no;
   }
 
   public void help() {

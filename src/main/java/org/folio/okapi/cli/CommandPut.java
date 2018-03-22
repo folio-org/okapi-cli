@@ -8,16 +8,6 @@ import io.vertx.core.json.JsonArray;
 public class CommandPut implements Command {
 
   @Override
-  public String getName() {
-    return "put";
-  }
-
-  @Override
-  public int getNoArgs() {
-    return 2;
-  }
-
-  @Override
   public String getDescription() {
     return "put <path> <body>: HTTP PUT";
   }

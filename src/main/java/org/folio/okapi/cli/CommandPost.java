@@ -8,18 +8,8 @@ import io.vertx.core.json.JsonArray;
 public class CommandPost implements Command {
 
   @Override
-  public String getName() {
-    return "post";
-  }
-
-  @Override
-  public int getNoArgs() {
-    return 2;
-  }
-
-  @Override
   public String getDescription() {
-    return "post <path> <body> : HTTP post";
+    return "post <path> <body>: HTTP post";
   }
 
   @Override

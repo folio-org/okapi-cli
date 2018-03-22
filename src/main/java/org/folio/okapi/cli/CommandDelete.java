@@ -9,18 +9,8 @@ import io.vertx.core.json.JsonArray;
 public class CommandDelete implements Command {
 
   @Override
-  public String getName() {
-    return "delete";
-  }
-
-  @Override
-  public int getNoArgs() {
-    return 1;
-  }
-
-  @Override
   public String getDescription() {
-    return "delete <path> : HTTP DELETE";
+    return "delete <path>: HTTP DELETE";
   }
 
   @Override

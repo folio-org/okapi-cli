@@ -8,17 +8,6 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonArray;
 
 public class CommandInstall implements Command {
-
-  @Override
-  public String getName() {
-    return "install";
-  }
-
-  @Override
-  public int getNoArgs() {
-    return 0;
-  }
-
   @Override
   public String getDescription() {
     return "install: changes modules enabled by tenant";

@@ -10,18 +10,8 @@ import org.folio.okapi.common.XOkapiHeaders;
 public class CommandLogin implements Command {
 
   @Override
-  public String getName() {
-    return "login";
-  }
-
-  @Override
-  public int getNoArgs() {
-    return 3;
-  }
-
-  @Override
   public String getDescription() {
-    return "login <tenant> <username> <password> : log on via /authn/login endpoint";
+    return "login <tenant> <username> <password>: log on via /authn/login endpoint";
   }
 
   @Override
