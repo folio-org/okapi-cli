@@ -33,9 +33,7 @@ public class CommandLogin implements Command {
     v.headers.put(XOkapiHeaders.TENANT, tenant);
     JsonObject j = new JsonObject();
     j.put("username", username);
-    if (password != null) {
-      j.put("password", password);
-    }
+    j.put("password", password);
     v.requestBuffer(HttpMethod.POST, "/authn/login", j.toBuffer(), res -> {
       v.headers.remove(XOkapiHeaders.TENANT);
       handler.handle(res);
