@@ -9,6 +9,7 @@ import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
@@ -29,7 +30,7 @@ public class MainVerticle extends AbstractVerticle {
   protected OkapiClient cli;
   private JsonObject vertxConfig;
   protected JsonObject cliConfig;
-  private Buffer buf;
+  private JsonArray requestLog;
   private PrintWriter out;
   private FileSystem fs;
   protected String tenant;
@@ -40,7 +41,7 @@ public class MainVerticle extends AbstractVerticle {
   public void init(Vertx vertx, Context context) {
     logger.info("init begin");
     this.vertx = vertx;
-    buf = Buffer.buffer();
+    requestLog = new JsonArray();
     fs = vertx.fileSystem();
     headers.put("Content-Type", "application/json");
     headers.put("Accept", "*/*");
@@ -76,6 +77,23 @@ public class MainVerticle extends AbstractVerticle {
     });
   }
 
+  private void setJsonBody(JsonObject obj, String key, Buffer b) {
+    if (b == null || b.length() == 0) {
+      return;
+    }
+    try {
+      obj.put(key, b.toJsonObject());
+      return;
+    } catch (DecodeException ex) {
+    }
+    try {
+      obj.put(key, b.toJsonArray());
+      return;
+    } catch (DecodeException ex) {
+    }
+    obj.put(key, b.toString());
+  }
+
   private void usage(Handler<AsyncResult<Void>> handler) {
     handler.handle(Future.failedFuture("No command given; use help for help"));
   }
@@ -83,16 +101,28 @@ public class MainVerticle extends AbstractVerticle {
   protected void requestBuffer(HttpMethod method, String path, Buffer b,
     Handler<AsyncResult<Void>> handler) {
 
+    JsonObject jReq = new JsonObject();
+    jReq.put("method", method.name());
+    jReq.put("path", path);
+    JsonObject h = new JsonObject();
+    for (Map.Entry<String, String> entry : headers.entrySet()) {
+      h.put(entry.getKey(), entry.getValue());
+    }
+    jReq.put("headers", h);
+    setJsonBody(jReq, "request", b);
     cli.setHeaders(headers);
-    cli.request(method, path, b.toString(), res2 -> {
-      if (res2.failed()) {
-        handler.handle(Future.failedFuture(res2.cause()));
+    cli.request(method, path, b.toString(), res -> {
+      if (res.failed()) {
+        jReq.put("diagnostic", res.cause().getMessage());
+        requestLog.add(jReq);
+        handler.handle(Future.failedFuture(res.cause()));
       } else {
         String token = cli.getRespHeaders().get(XOkapiHeaders.TOKEN);
         if (token != null) {
           headers.put(XOkapiHeaders.TOKEN, token);
         }
-        buf.appendString(res2.result());
+        setJsonBody(jReq, "response", Buffer.buffer(res.result()));
+        requestLog.add(jReq);
         handler.handle(Future.succeededFuture());
       }
     });
@@ -112,7 +142,6 @@ public class MainVerticle extends AbstractVerticle {
         }
       });
     }
-
   }
 
   private void readConf(Handler<AsyncResult<Void>> handler)  {
@@ -196,15 +225,13 @@ public class MainVerticle extends AbstractVerticle {
           if (fname != null) {
             try {
               out = new PrintWriter(fname);
-              out.print(buf.toString());
+              out.print(requestLog.encodePrettily());
               out.close();
             } catch (IOException ex) {
               handler.handle(Future.failedFuture(h.cause().getMessage()));
             }
           } else {
-            if (buf.length() > 0) {
-              System.out.println(buf.toString());
-            }
+            System.out.println(requestLog.encodePrettily());
           }
           handler.handle(Future.succeededFuture());
         } else {
