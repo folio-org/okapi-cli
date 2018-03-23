@@ -258,32 +258,6 @@ public class MainVerticle extends AbstractVerticle {
           factory.help();
           i++;
           continue;
-        } else if (a.startsWith("--deploy=")) {
-          fut1.compose(v -> {
-            cliConfig.put("deploy", a.substring(9));
-            fut2.complete();
-          }, futF);
-        } else if (a.startsWith("--enable=")) {
-          fut1.compose(v -> {
-            JsonObject j = new JsonObject();
-            j.put("action", "enable");
-            j.put("id", a.substring(9));
-            installArray.add(j);
-            fut2.complete();
-          }, futF);
-        } else if (a.startsWith("--disable=")) {
-          fut1.compose(v -> {
-            JsonObject j = new JsonObject();
-            j.put("action", "disable");
-            j.put("id", a.substring(10));
-            installArray.add(j);
-            fut2.complete();
-          }, futF);
-        } else if (a.equals("--no-tenant")) {
-          fut1.compose(v -> {
-            tenant = null;
-            fut2.complete();
-          }, futF);
         } else {
           fut1.compose(v -> fut2.fail("Bad command: " + a), futF);
         }
