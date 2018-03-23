@@ -239,40 +239,25 @@ public class MainVerticle extends AbstractVerticle {
           if (i + no >= ar.size()) {
             fut1.compose(v -> fut2.fail("Missing args for command: " + a), futF);
           } else {
-            final int offset = i + 1;
             final Command fCmd = cmd;
-            fut1.compose(v -> fCmd.run(this, ar, offset, fut2.completer()), futF);
+            if (cmd.getDescription().startsWith("-")) {
+              JsonArray ar1 = new JsonArray();
+              String opt = ar.getString(i);
+              int idx = opt.indexOf('=');
+              if (idx != -1) {
+                ar1.add(opt.substring(idx + 1));
+              }
+              fut1.compose(v -> fCmd.run(this, ar1, 0, fut2.completer()), futF);
+            } else {
+              final int offset = i + 1;
+              fut1.compose(v -> fCmd.run(this, ar, offset, fut2.completer()), futF);
+            }
             i += no;
           }
         } else if (a.equals("help")) {
           factory.help();
           i++;
           continue;
-        } else if (a.startsWith("--okapi-url=")) {
-          fut1.compose(v -> {
-            final String url = a.substring(12);
-            cliConfig.put("okapiUrl", url);
-            if (cli != null) {
-              cli.close();
-            }
-            cli = new OkapiClient(url, vertx, headers);
-            fut2.complete();
-          }, futF);
-        } else if (a.startsWith("--tenant=")) {
-          fut1.compose(v -> {
-            tenant = a.substring(9);
-            fut2.complete();
-          }, futF);
-        } else if (a.startsWith("--pull-url=")) {
-          fut1.compose(v -> {
-            final String [] urls = a.substring(11).split(",");
-            JsonArray pullUrls = new JsonArray();
-            for (String url : urls) {
-              pullUrls.add(url);
-            }
-            cliConfig.put("pullUrls", pullUrls);
-            fut2.complete();
-          }, futF);
         } else if (a.startsWith("--deploy=")) {
           fut1.compose(v -> {
             cliConfig.put("deploy", a.substring(9));
