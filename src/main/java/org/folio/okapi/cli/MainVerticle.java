@@ -195,6 +195,31 @@ public class MainVerticle extends AbstractVerticle {
     );
   }
 
+  private Future<Void> createFutF(Handler<AsyncResult<Void>> handler) {
+    Future<Void> futF = Future.future();
+
+    futF.setHandler(h -> {
+      if (h.succeeded()) {
+        String fname = vertxConfig.getString("okapi-cli-output-file");
+        if (fname != null) {
+          try {
+            out = new PrintWriter(fname);
+            out.print(requestLog.encodePrettily());
+            out.close();
+          } catch (IOException ex) {
+            handler.handle(Future.failedFuture(h.cause().getMessage()));
+          }
+        } else {
+          System.out.println(requestLog.encodePrettily());
+        }
+        handler.handle(Future.succeededFuture());
+      } else {
+        handler.handle(Future.failedFuture(h.cause().getMessage()));
+      }
+    });
+    return futF;
+  }
+
   private void start2(Handler<AsyncResult<Void>> handler) {
     cli = new OkapiClient(cliConfig.getString("okapiUrl"), vertx, headers);
     CommandFactory factory = new CommandFactory();
@@ -203,28 +228,7 @@ public class MainVerticle extends AbstractVerticle {
     if (ar == null || ar.isEmpty()) {
       usage(handler);
     } else {
-      Future<Void> futF = Future.future();
-
-      futF.setHandler(h -> {
-        if (h.succeeded()) {
-          String fname = vertxConfig.getString("okapi-cli-output-file");
-          if (fname != null) {
-            try {
-              out = new PrintWriter(fname);
-              out.print(requestLog.encodePrettily());
-              out.close();
-            } catch (IOException ex) {
-              handler.handle(Future.failedFuture(h.cause().getMessage()));
-            }
-          } else {
-            System.out.println(requestLog.encodePrettily());
-          }
-          handler.handle(Future.succeededFuture());
-        } else {
-          handler.handle(Future.failedFuture(h.cause().getMessage()));
-        }
-      });
-
+      Future<Void> futF = createFutF(handler);
       Future<Void> fut1 = Future.future();
       fut1.complete();
       int i = 0;
