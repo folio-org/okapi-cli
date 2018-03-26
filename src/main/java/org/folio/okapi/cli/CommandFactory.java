@@ -18,6 +18,7 @@ public class CommandFactory {
     commands.add(new CommandPull());
     commands.add(new CommandPut());
     commands.add(new CommandTenant());
+    commands.add(new CommandUpgrade());
     commands.add(new CommandVersion());
     commands.add(new OptionDeploy());
     commands.add(new OptionDisable());

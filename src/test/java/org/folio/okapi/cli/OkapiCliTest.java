@@ -257,7 +257,6 @@ public class OkapiCliTest {
       context.assertTrue(res.succeeded());
       async.complete();
     });
-
   }
 
   @Test
@@ -285,7 +284,6 @@ public class OkapiCliTest {
       context.assertTrue(res.failed());
       async.complete();
     });
-
   }
 
   @Test
@@ -325,6 +323,56 @@ public class OkapiCliTest {
     ar.add("--tenant=testlib");
     // fails because no modules is selected
     ar.add("install");
+
+    runIt(ar, res -> {
+      context.assertTrue(res.failed());
+      async.complete();
+    });
+  }
+
+ @Test
+  public void testUpgrade1(TestContext context) {
+    Async async = context.async();
+    JsonArray ar = new JsonArray();
+    final String mod1 = "{\"id\": \"mod-1.0.0\", \"provides\": [], \"requires\":[]}";
+
+    ar.add("--okapi-url=http://localhost:" + Integer.toString(port1));
+
+    ar.add("post");
+    ar.add("/_/proxy/modules");
+    ar.add(mod1);
+
+    ar.add("post");
+    ar.add("/_/proxy/tenants");
+    ar.add("{\"id\": \"testlib\"}");
+
+    ar.add("--tenant=testlib");
+    ar.add("--enable=mod");
+    ar.add("install");
+
+    final String mod2 = "{\"id\": \"mod-1.2.0\", \"provides\": [], \"requires\":[]}";
+    ar.add("post");
+    ar.add("/_/proxy/modules");
+    ar.add(mod2);
+
+    ar.add("upgrade");
+
+    runIt(ar, res -> {
+      context.assertTrue(res.succeeded());
+      async.complete();
+    });
+  }
+
+  @Test
+  public void testUpgradeNoTenant(TestContext context) {
+    Async async = context.async();
+    JsonArray ar = new JsonArray();
+    final String mod = "{\"id\": \"mod-1.0.0\", \"provides\": [], \"requires\":[]}";
+
+    ar.add("--okapi-url=http://localhost:" + Integer.toString(port1));
+
+    // fails because no tenant is selected
+    ar.add("upgrade");
 
     runIt(ar, res -> {
       context.assertTrue(res.failed());
