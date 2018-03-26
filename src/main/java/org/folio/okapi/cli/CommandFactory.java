@@ -39,7 +39,6 @@ public class CommandFactory {
         } else {
           i = des.indexOf(':');
         }
-        System.out.println("COMPARING arg=" + arg + " and " + des.substring(0, i));
         if (arg.startsWith(des.substring(0, i))) {
           return c;
         }
