@@ -164,6 +164,13 @@ public class MainVerticle extends AbstractVerticle {
     });
   }
 
+  protected void installArrayAdd(String id, String name, String value) {
+    JsonObject j = new JsonObject();
+    j.put(name, value);
+    j.put("id", id);
+    installArray.add(j);
+  }
+
   private void confPut(String key, String val) {
     if (val == null) {
       cliConfig.remove(key);
