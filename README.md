@@ -29,6 +29,58 @@ should produce fat jar. Invoke with
 
 (should be called from a shell script in the future)
 
+In the following material we'll use okapi-cli is a script that
+invokes java with the fat jar.
+
+## Using okapi-cli
+
+Okapi-cli takes options - with leading double dash and commands. Options
+takes two forms: a value-less form, Eg `--myopt` and with a value
+`--myopt=value`. Options must precede commands in order to take effect for
+the command that follows.
+
+Commands takes zero or more arguments. They usually interact with
+Okapi in one way or another, while the options merely tune the
+comamnds.
+
+The `help` commands displays supported commands and options.
+
+Okapi-cli persists some values in in  $HOME/.okapi.cli`, such as
+the URL for Okapi, URL for remote repo (pull) and the Okapi session
+token.
+
+Acting as tenant can be done in two ways. The `tenant` command sets
+the tenant (X-Okapi-Tenant header). This is fine in some cases, but
+if permissins require that you login you'll have to use the second
+way: the `login` command which takes tenant, user and password.
+The `logout` command clears the session. At this stage, this does not
+interact with Okapi, but it might in the future. For now it simply clears
+the Tenant/Token so that the Okapi-cli acts as the supertenant (which is
+what happens if X-Okapi-Tenant is unset).
+
+There are 4 fundamental HTTP commands `post`, `put`, `get`, and `update`
+that offers general interaction with Okapi.
+
+When commands takes a <body> argument (pushed HTTP content) that reads
+verbatim from the command line arg if that starts with `{` which a common
+JSON leading character. If not, the body argument is treated as a filename
+where the content is read from.
+
+(Question: should we use curl @-notation and only read from file when
+leading with @?).
+
+### Example 1: get remote modules and list them
+
+    $ okapi-cli --okapi-url=http://localhost:9130
+    $ okapi-cli pull
+    $ okapi-cli get /_/proxy/modules
+
+
+### Example 2: enable a module for a tenant
+
+    $ okapi-cli --tenant=diku
+    $ okapi-cli --enable=mod-users install
+
 ### Other documentation
 
 Other [modules](https://dev.folio.org/source-code/#server-side) are described,
