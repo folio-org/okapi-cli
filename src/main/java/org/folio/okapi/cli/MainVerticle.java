@@ -37,7 +37,7 @@ public class MainVerticle extends AbstractVerticle {
 
   @Override
   public void init(Vertx vertx, Context context) {
-    logger.info("init begin");
+    logger.debug("init begin");
     this.vertx = vertx;
     requestLog = new JsonArray();
     fs = vertx.fileSystem();
@@ -60,12 +60,12 @@ public class MainVerticle extends AbstractVerticle {
         confFname = ".okapi.cli";
       }
     }
-    logger.info("init done");
+    logger.debug("init done");
   }
 
   @Override
   public void start(Future<Void> fut) throws IOException {
-    logger.info("start");
+    logger.debug("start");
     start1(res -> {
       if (res.failed()) {
         fut.handle(Future.failedFuture(res.cause()));
@@ -152,7 +152,7 @@ public class MainVerticle extends AbstractVerticle {
       if (res.failed()) {
         logger.warn(confFname + ": " + res.cause().getMessage());
       } else {
-        logger.info("reading " + confFname + "  OK");
+        logger.debug("reading " + confFname + "  OK");
         Buffer buf = res.result();
         cliConfig = new JsonObject(buf);
         tenant = cliConfig.getString("tenant");
@@ -186,7 +186,7 @@ public class MainVerticle extends AbstractVerticle {
   }
 
   private void start1(Handler<AsyncResult<Void>> handler) {
-    logger.info("start1");
+    logger.debug("start1");
     readConf(res
       -> start2(res1
         -> writeConf(res2 -> {
@@ -241,7 +241,7 @@ public class MainVerticle extends AbstractVerticle {
       int i = 0;
       while (i < ar.size()) {
         String a = ar.getString(i);
-        logger.info("Inspecting a=" + a + " i=" + i);
+        logger.debug("Inspecting a=" + a + " i=" + i);
         Future<Void> fut2 = Future.future();
 
         Command cmd = factory.create(a);
