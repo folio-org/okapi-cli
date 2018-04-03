@@ -278,6 +278,7 @@ public class OkapiCliTest {
     // fails because modules does not exist
     ar.add("--tenant=testlib");
     ar.add("--enable=mod-2.0.0");
+    ar.add("--simulate=true");
     ar.add("install");
 
     runIt(ar, res -> {

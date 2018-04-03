@@ -26,6 +26,7 @@ public class CommandFactory {
     commands.add(new OptionNoTenant());
     commands.add(new OptionOkapiUrl());
     commands.add(new OptionPullUrl());
+    commands.add(new OptionSimulate());
     commands.add(new OptionTenant());
   }
 

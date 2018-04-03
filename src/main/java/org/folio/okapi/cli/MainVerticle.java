@@ -46,6 +46,7 @@ public class MainVerticle extends AbstractVerticle {
     vertxConfig = context.config();
     cliConfig = new JsonObject();
     cliConfig.put("deploy", "false");
+    cliConfig.put("simulate", "false");
     cliConfig.put("okapiUrl", "http://localhost:9130");
     installArray = new JsonArray();
     JsonArray pullUrls = new JsonArray();
