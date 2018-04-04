@@ -5,6 +5,7 @@ import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.FileSystem;
@@ -98,28 +99,40 @@ public class MainVerticle extends AbstractVerticle {
   protected void requestBuffer(HttpMethod method, String path, Buffer b,
     Handler<AsyncResult<Void>> handler) {
 
-    JsonObject jReq = new JsonObject();
-    jReq.put("method", method.name());
-    jReq.put("path", path);
-    JsonObject h = new JsonObject();
+    JsonObject hReq = new JsonObject();
+    hReq.put("method", method.name());
+    hReq.put("path", path);
+    JsonObject h1 = new JsonObject();
     for (Map.Entry<String, String> entry : headers.entrySet()) {
-      h.put(entry.getKey(), entry.getValue());
+      h1.put(entry.getKey(), entry.getValue());
     }
-    jReq.put("headers", h);
-    setJsonBody(jReq, "request", b);
+    JsonObject jReq = new JsonObject();
+    jReq.put("headers", h1);
+    setJsonBody(jReq, "body", b);
+    hReq.put("request", jReq);
     cli.setHeaders(headers);
     cli.request(method, path, b.toString(), res -> {
+      JsonObject jRes = new JsonObject();
+      hReq.put("response", jRes);
+      MultiMap respHeaders = cli.getRespHeaders();
+      if (respHeaders != null) {
+        final JsonObject h2 = new JsonObject();
+        for (Map.Entry<String, String> entry : respHeaders.entries()) {
+          h2.put(entry.getKey(), entry.getValue());
+        }
+        jRes.put("headers", h2);
+      }
       if (res.failed()) {
-        jReq.put("diagnostic", res.cause().getMessage());
-        requestLog.add(jReq);
+        jRes.put("diagnostic", res.cause().getMessage());
+        requestLog.add(hReq);
         handler.handle(Future.failedFuture(res.cause()));
       } else {
-        String token = cli.getRespHeaders().get(XOkapiHeaders.TOKEN);
+        final String token = respHeaders.get(XOkapiHeaders.TOKEN);
         if (token != null) {
           headers.put(XOkapiHeaders.TOKEN, token);
         }
-        setJsonBody(jReq, "response", Buffer.buffer(res.result()));
-        requestLog.add(jReq);
+        setJsonBody(jRes, "body", Buffer.buffer(res.result()));
+        requestLog.add(hReq);
         handler.handle(Future.succeededFuture());
       }
     });
@@ -203,6 +216,7 @@ public class MainVerticle extends AbstractVerticle {
     );
   }
 
+  @java.lang.SuppressWarnings({"squid:S106"})
   private Future<Void> createFutF(Handler<AsyncResult<Void>> handler) {
     Future<Void> futF = Future.future();
 

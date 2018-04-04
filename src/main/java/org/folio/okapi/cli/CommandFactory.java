@@ -77,6 +77,7 @@ public class CommandFactory {
     return no;
   }
 
+  @java.lang.SuppressWarnings({"squid:S106"})
   public void help() {
     for (Command c : commands) {
       System.out.println(c.getDescription());
