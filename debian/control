@@ -1,0 +1,16 @@
+Source: okapi-cli
+Section: net
+Priority: extra
+Maintainer: Index Data <support@indexdata.com>
+Build-Depends: debhelper (>=9),
+        openjdk-8-jdk,
+        maven (>=3.3)
+Standards-Version: 3.9.6
+Homepage: https://github.com/folio-org/okapi-cli
+
+Package: okapi-cli
+Architecture: all
+Depends: openjdk-8-jre
+Description:  Okapi Command line interface
+ okapi-cli is a command-line interface for the Okapi API gateway and
+ part of the FOLIO platform.

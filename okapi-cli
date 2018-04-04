@@ -1,0 +1,7 @@
+#!/bin/sh
+if test "$0" = "/usr/bin/okapi-cli"; then
+	LOC=/usr/share/okapi-cli
+else
+	LOC=`dirname $0`/target
+fi
+exec java -jar $LOC/okapi-cli-fat.jar $*
