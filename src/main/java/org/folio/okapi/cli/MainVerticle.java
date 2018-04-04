@@ -203,6 +203,7 @@ public class MainVerticle extends AbstractVerticle {
     );
   }
 
+  @java.lang.SuppressWarnings({"squid:S106"})
   private Future<Void> createFutF(Handler<AsyncResult<Void>> handler) {
     Future<Void> futF = Future.future();
 
