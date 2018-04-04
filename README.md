@@ -27,10 +27,8 @@ should produce fat jar. Invoke with
 
     $ java -jar target/okapi-cli-fat.jar [args]
 
-(should be called from a shell script in the future)
-
-In the following material we'll use okapi-cli is a script that
-invokes java with the fat jar.
+Refer to the Bourne shell script `okapi-cli` which invokes the java 
+runtime with the fat jar.
 
 ## Using okapi-cli
 
@@ -41,9 +39,9 @@ the command that follows.
 
 Commands takes zero or more arguments. They usually interact with
 Okapi in one way or another, while the options merely tune the
-comamnds.
+commands.
 
-The `help` commands displays supported commands and options.
+The `help` command displays supported commands and options.
 
 Okapi-cli persists some values in in  $HOME/.okapi.cli`, such as
 the URL for Okapi, URL for remote repo (pull) and the Okapi session
@@ -61,13 +59,9 @@ what happens if X-Okapi-Tenant is unset).
 There are 4 fundamental HTTP commands `post`, `put`, `get`, and `update`
 that offers general interaction with Okapi.
 
-When commands takes a <body> argument (pushed HTTP content) that reads
-verbatim from the command line arg if that starts with `{` which a common
-JSON leading character. If not, the body argument is treated as a filename
-where the content is read from.
-
-(Question: should we use curl @-notation and only read from file when
-leading with @?).
+When commands takes a <body> argument (pushed HTTP content) okapi-cli reads
+verbatim from the command line arg. However, if prefixed with `@` the remaining
+characters are treated as a filename and contens is read from that file.
 
 ### Example 1: get remote modules and list them
 
@@ -78,6 +72,7 @@ leading with @?).
 
 ### Example 2: enable a module for a tenant
 
+    $ okapi-cli post /_/proxy/tenants '{"id":"diku"}'
     $ okapi-cli --tenant=diku
     $ okapi-cli --enable=mod-users install
 
