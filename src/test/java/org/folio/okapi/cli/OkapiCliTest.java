@@ -394,7 +394,10 @@ public class OkapiCliTest {
 
     ar.add("put");
     ar.add("/_/proxy/tenants/testlib");
-    ar.add("{\"id\": \"testlib\", \"name\" : \"Test Library\"}");
+
+    Buffer buf = Buffer.buffer("{\"id\": \"testlib\", \"name\" : \"Test Library\"}");
+    fs.writeFileBlocking("okapi-cli-input.txt", buf);
+    ar.add("@okapi-cli-input.txt");
 
     ar.add("get");
     ar.add("/_/proxy/tenants/testlib");

@@ -128,16 +128,16 @@ public class MainVerticle extends AbstractVerticle {
   protected void requestFile(HttpMethod method, String path, String file,
     Handler<AsyncResult<Void>> handler) {
 
-    if (file.startsWith("{") || file.isEmpty()) {
-      requestBuffer(method, path, Buffer.buffer(file), handler);
-    } else {
-      fs.readFile(path, res -> {
+    if (file.startsWith("@")) {
+      fs.readFile(file.substring(1), res -> {
         if (res.failed()) {
           handler.handle(Future.failedFuture(res.cause()));
         } else {
           requestBuffer(method, path, res.result(), handler);
         }
       });
+    } else {
+      requestBuffer(method, path, Buffer.buffer(file), handler);
     }
   }
 
