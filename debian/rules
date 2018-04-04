@@ -1,0 +1,49 @@
+#!/usr/bin/make -f
+
+MVN = mvn -Dmaven.test.skip=true -Duser.home="$(HOME)"
+
+PKG = okapi-cli
+PKGROOT = $(CURDIR)/debian/$(PKG)
+
+clean:
+	dh_testdir
+	dh_clean build-stamp install-stamp
+	$(MVN) clean
+
+build: build-arch build-indep
+build-arch:
+build-indep: build-stamp
+build-stamp:
+	dh_testdir
+	$(MVN) package
+	touch $@
+
+install: install-stamp
+install-stamp: build
+	dh_testdir
+	dh_testroot
+	dh_prep
+	dh_installdirs
+	install -d $(PKGROOT)/usr/bin
+	install -p -m 755 okapi-cli $(PKGROOT)/usr/bin
+	install -d $(PKGROOT)/usr/share/$(PKG)
+	install -p -m 644 target/$(PKG)-fat.jar $(PKGROOT)/usr/share/$(PKG)
+	touch $@
+
+binary-arch: build-arch
+binary-indep: install build-indep
+
+binary: binary-arch binary-indep
+	dh_testdir
+	dh_testroot
+	dh_installdocs
+	dh_installchangelogs
+	dh_compress
+	dh_installdeb
+	dh_gencontrol
+	dh_md5sums
+	dh_builddeb
+
+.PHONY: build build-arch build-indep install-arch install-indep \
+ binary-arch binary-indep binary
+
