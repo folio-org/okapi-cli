@@ -8,7 +8,9 @@ public class CommandFactory {
   List<Command> commands = new LinkedList<>();
 
   CommandFactory() {
+    commands.add(new CommandAvailable());
     commands.add(new CommandDelete());
+    commands.add(new CommandEnabled());
     commands.add(new CommandEnv());
     commands.add(new CommandGet());
     commands.add(new CommandInstall());
