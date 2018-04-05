@@ -331,7 +331,7 @@ public class OkapiCliTest {
     });
   }
 
- @Test
+  @Test
   public void testUpgrade1(TestContext context) {
     Async async = context.async();
     JsonArray ar = new JsonArray();
@@ -342,6 +342,8 @@ public class OkapiCliTest {
     ar.add("post");
     ar.add("/_/proxy/modules");
     ar.add(mod1);
+
+    ar.add("available");
 
     ar.add("post");
     ar.add("/_/proxy/tenants");
@@ -357,6 +359,7 @@ public class OkapiCliTest {
     ar.add(mod2);
 
     ar.add("upgrade");
+    ar.add("enabled");
 
     runIt(ar, res -> {
       context.assertTrue(res.succeeded());
