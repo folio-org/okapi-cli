@@ -536,4 +536,13 @@ public class OkapiCliTest {
 
   }
 
+  @Test
+  public void testMain(TestContext context) {
+    Async async = context.async();
+    String[] args = {"--okapi-url=http://localhost:" + Integer.toString(port1), "version"};
+    Main.deploy(args, res -> {
+      context.assertTrue(res.succeeded());
+      async.complete();
+    });
+  }
 }
