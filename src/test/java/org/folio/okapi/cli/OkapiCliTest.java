@@ -457,6 +457,23 @@ public class OkapiCliTest {
   }
 
   @Test
+  public void testBadFile(TestContext context) {
+    Async async = context.async();
+    JsonArray ar = new JsonArray();
+
+    ar.add("--okapi-url=http://localhost:" + Integer.toString(port1));
+
+    ar.add("post");
+    ar.add("/_/proxy/tenants");
+    ar.add("@does_not_exist");
+
+    runIt(ar, res -> {
+      context.assertTrue(res.failed());
+      async.complete();
+    });
+  }
+
+  @Test
   public void testNoCommand(TestContext context) {
     Async async = context.async();
     JsonArray ar = new JsonArray();
