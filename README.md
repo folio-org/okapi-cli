@@ -23,17 +23,17 @@ Running
 
     $ mvn install
 
-should produce fat jar. Invoke with
+should produce the fat jar. Invoke with
 
     $ java -jar target/okapi-cli-fat.jar [args]
 
-Refer to the Bourne shell script `okapi-cli` which invokes the java 
+Refer to the Bourne shell script `okapi-cli` which invokes the java
 runtime with the fat jar.
 
 ## Using okapi-cli
 
-Okapi-cli takes options - with leading double dash and commands. Options
-takes two forms: a value-less form, Eg `--myopt` and with a value
+Okapi-cli has options, with leading double dash and commands. Options
+take two forms: a value-less form, e.g. `--myopt` and with a value
 `--myopt=value`. Options must precede commands in order to take effect for
 the command that follows.
 
@@ -43,13 +43,13 @@ commands.
 
 The `help` command displays supported commands and options.
 
-Okapi-cli persists some values in in  $HOME/.okapi.cli`, such as
+Okapi-cli persists some values in `$HOME/.okapi.cli`, such as
 the URL for Okapi, URL for remote repo (pull) and the Okapi session
 token.
 
 Acting as tenant can be done in two ways. The `tenant` command sets
 the tenant (X-Okapi-Tenant header). This is fine in some cases, but
-if permissins require that you login you'll have to use the second
+if permissions require that you login you'll have to use the second
 way: the `login` command which takes tenant, user and password.
 The `logout` command clears the session. At this stage, this does not
 interact with Okapi, but it might in the future. For now it simply clears
@@ -57,11 +57,11 @@ the Tenant/Token so that the Okapi-cli acts as the supertenant (which is
 what happens if X-Okapi-Tenant is unset).
 
 There are 4 fundamental HTTP commands `post`, `put`, `get`, and `update`
-that offers general interaction with Okapi.
+that offer general interaction with Okapi.
 
-When commands takes a <body> argument (pushed HTTP content) okapi-cli reads
-verbatim from the command line arg. However, if prefixed with `@` the remaining
-characters are treated as a filename and contens is read from that file.
+When commands take a `<body>` argument (pushed HTTP content) okapi-cli reads
+verbatim from the command-line arg. However, if prefixed with `@` the remaining
+characters are treated as a filename and contents are read from that file.
 
 ### Example 1: get remote modules and list them
 
