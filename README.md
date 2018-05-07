@@ -56,7 +56,7 @@ interact with Okapi, but it might in the future. For now it simply clears
 the Tenant/Token so that the Okapi-cli acts as the supertenant (which is
 what happens if X-Okapi-Tenant is unset).
 
-There are 4 fundamental HTTP commands `post`, `put`, `get`, and `update`
+There are 4 fundamental HTTP commands `post`, `put`, `get`, and `delete`
 that offer general interaction with Okapi.
 
 When commands take a `<body>` argument (pushed HTTP content) okapi-cli reads
