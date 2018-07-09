@@ -86,5 +86,5 @@ See also [Okapi](https://github.com/folio-org/okapi) itself.
 ### Issue tracker
 
 See project [OKCLI](https://issues.folio.org/browse/OKCLI)
-at the [FOLIO issue tracker](https://dev.folio.org/community/guide-issues).
+at the [FOLIO issue tracker](https://dev.folio.org/guidelines/issue-tracker).
 
