@@ -20,6 +20,7 @@ public class CommandLogin implements Command {
     final String username = ar.getString(i + 1);
     final String password = ar.getString(i + 2);
 
+    v.headers.remove(XOkapiHeaders.TOKEN);
     v.headers.put(XOkapiHeaders.TENANT, tenant);
     JsonObject j = new JsonObject();
     j.put("username", username);
