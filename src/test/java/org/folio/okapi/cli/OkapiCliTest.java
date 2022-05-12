@@ -7,19 +7,18 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.file.FileSystem;
-import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
 import io.vertx.ext.unit.Async;
 import io.vertx.ext.unit.TestContext;
 import io.vertx.ext.unit.junit.VertxUnitRunner;
+import io.vertx.ext.web.client.WebClient;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
-import org.folio.okapi.common.OkapiLogger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -29,11 +28,10 @@ import org.junit.runner.RunWith;
 @RunWith(VertxUnitRunner.class)
 public class OkapiCliTest {
 
-  private final Logger logger = OkapiLogger.get();
+  private static final Logger logger = LogManager.getLogger(OkapiCliTest.class);
+
   private Vertx vertx;
-  private static final String LS = System.lineSeparator();
   private final int port1 = 9230;
-  private String vert1;
   private FileSystem fs;
 
   public OkapiCliTest() {
@@ -42,39 +40,20 @@ public class OkapiCliTest {
   @Before
   public void setUp(TestContext context) {
     vertx = Vertx.vertx();
-    Async async = context.async();
 
     DeploymentOptions opt = new DeploymentOptions()
-      .setConfig(new JsonObject().put("port", Integer.toString(port1)));
+        .setConfig(new JsonObject().put("port", Integer.toString(port1)));
+
     fs = vertx.fileSystem();
-    fs.delete("okapi-cli-config.txt", res2 -> {
-      vertx.deployVerticle(org.folio.okapi.MainVerticle.class.getName(), opt, res -> {
-        if (res.failed()) {
-          context.fail(res.cause());
-        } else {
-          vert1 = res.result();
-          async.complete();
-        }
-      });
-    });
+    fs.delete("okapi-cli-config.txt")
+    .otherwiseEmpty()
+    .compose(x -> vertx.deployVerticle(org.folio.okapi.MainVerticle.class, opt))
+    .onComplete(context.asyncAssertSuccess());
   }
 
   @After
   public void tearDown(TestContext context) {
-    td(context, context.async());
-  }
-
-  private void td(TestContext context, Async async) {
-    if (vert1 != null) {
-      vertx.undeploy(vert1, res -> {
-        vert1 = null;
-        td(context, async);
-      });
-    } else {
-      vertx.close(x -> {
-        async.complete();
-      });
-    }
+    vertx.close().onComplete(context.asyncAssertSuccess());
   }
 
   private void runIt(JsonArray ar, Handler<AsyncResult<String>> handler) {
@@ -111,27 +90,10 @@ public class OkapiCliTest {
 
   @Test
   public void test0(TestContext context) {
-    Async async = context.async();
-
-    HttpClient cli = vertx.createHttpClient();
-    Buffer body = Buffer.buffer();
-    HttpClientRequest req = cli.get(port1, "localhost", "/_/version", res -> {
-      res.handler(body::appendBuffer);
-      res.endHandler(x -> {
-        logger.info("buffer=" + body.toString());
-        context.assertNotNull(body.toString());
-        async.complete();
-      });
-      res.exceptionHandler(x -> {
-        context.fail();
-        async.complete();
-      });
-    });
-    req.exceptionHandler(res -> {
-      context.fail();
-      async.complete();
-    });
-    req.end();
+    WebClient.create(vertx).get(port1, "localhost", "/_/version").send()
+    .onComplete(context.asyncAssertSuccess(buffer -> {
+        context.assertNotNull(buffer.toString());
+    }));
   }
 
   @Test

@@ -6,20 +6,21 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import org.folio.okapi.common.OkapiLogger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class Main {
+
+  private static final Logger LOGGER = LogManager.getLogger(Main.class);
 
   private Main() {
     throw new IllegalAccessError("Main");
   }
 
   public static void main(String[] args) {
-    Logger logger = OkapiLogger.get();
     deploy(args, dep -> {
       if (dep.failed()) {
-        logger.fatal(dep.cause().getMessage());
+        LOGGER.fatal(dep.cause().getMessage(), dep.cause());
         System.exit(1);
       } else {
         System.exit(0);
