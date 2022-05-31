@@ -1,9 +1,21 @@
 # okapi-cli
 
-Copyright (C) 2017-2019 The Open Library Foundation
+Copyright (C) 2017-2022 The Open Library Foundation
 
 This software is distributed under the terms of the Apache License,
 Version 2.0. See the file "[LICENSE](LICENSE)" for more information.
+
+## DEPRECATED
+
+Okapi CLI has been replaced and is no longer maintained.
+
+Please use
+
+* https://github.com/folio-org/stripes-cli
+* https://github.com/folio-org/folio-tools/tree/master/okapi-curl-env
+* https://github.com/MikeTaylor/okapi-curl
+
+instead.
 
 ## Introduction
 
